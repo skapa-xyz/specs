@@ -24,21 +24,25 @@ changes:
   - fip: FIP-0054
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0054.md
     description: Added EVM runtime actor for executing Ethereum smart contracts.
+  - fip: FIP-0055
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0055.md
+    description: Added Ethereum Address Manager and Ethereum Account actors.
 -->
 
-There are twelve (12) builtin System Actors in total, but not all of them interact with the VM. Each actor is identified by a _Code ID_ (or CID).
+There are fourteen (14) builtin System Actors in total, but not all of them interact with the VM. Each actor is identified by a _Code ID_ (or CID).
 
 There are four (4) system actors required for VM processing:
 
 - the [InitActor](sysactors#initactor), which initializes new actors and records the network name, and
 - the [CronActor](sysactors#cronactor), a scheduler actor that runs critical functions at every epoch.
 
-There are another two actors that interact with the VM:
+There are another three actors that interact with the VM:
 
 - the [AccountActor](sysactors#accountactor) responsible for user accounts (non-singleton), and
 - the [RewardActor](sysactors#rewardactor) for block reward and token vesting (singleton).
+- the `EthereumAccountActor` responsible for Ethereum EOA accounts, supporting native Ethereum transactions (non-singleton).
 
-The remaining eight (8) builtin System Actors that do not interact directly with the VM are the following:
+The remaining nine (9) builtin System Actors that do not interact directly with the VM are the following:
 
 - `StorageMarketActor`: responsible for managing storage and retrieval deals [[Market Actor Repo](https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/market/market_actor.go)]
 - `StorageMinerActor`: actor responsible to deal with storage mining operations and collect proofs [[Storage Miner Actor Repo](https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/miner/miner_actor.go)]
@@ -48,6 +52,7 @@ The remaining eight (8) builtin System Actors that do not interact directly with
 - `VerifiedRegistryActor`: responsible for managing the Filecoin Plus program, including Root Key Holders (via multisig), Notaries, Filecoin Plus clients, and DataCap allocations. This actor enables the social trust layer that allows verified data to receive a 10x quality multiplier. Since FIP-0028, it also supports removing DataCap from client addresses through the `RemoveVerifiedClientDatacap` method [[Verifreg Actor Repo](https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/verifreg/verified_registry_actor.go)]
 - `SystemActor`: general system actor that, since FIP-0031, maintains a registry of built-in actor Code CIDs [[System Actor Repo](https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/system/system_actor.go)]
 - `EVMRuntimeActor`: responsible for executing Ethereum smart contracts within the Filecoin Virtual Machine. Since FIP-0054, this actor enables EVM compatibility by running EVM bytecode and managing contract state [[EVM Actor Repo](https://github.com/filecoin-project/builtin-actors/tree/master/actors/evm)]
+- `EthereumAddressManagerActor` (EAM): singleton actor at f010 that manages the f410 address space for Ethereum addresses. Since FIP-0055, it acts as a factory for creating EVM contracts and Ethereum accounts [[EAM Actor Repo](https://github.com/filecoin-project/builtin-actors/tree/master/actors/eam)]
 
 ## CronActor
 
@@ -95,3 +100,14 @@ Since FIP-0044, the AccountActor implements the `AuthenticateMessage` method, wh
 The AuthenticateMessage method accepts authorization data (typically a signature) and a message, returning true if the authentication is valid.
 
 {{<embed src="https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/account/account_actor.go" lang="go" >}}
+
+## EthereumAccountActor
+
+Since FIP-0055, the `EthereumAccountActor` represents Ethereum Externally-Owned Accounts (EOAs) backed by secp256k1 keys. This actor enables native Ethereum transaction support in Filecoin:
+
+- **Ethereum Compatibility**: Accepts native EIP-1559 Ethereum transactions with secp256k1 ECDSA signatures
+- **Delegated Signatures**: Uses a new Delegated signature type that carries signatures verified by actor code
+- **Address Management**: Associated with f410 addresses managed by the Ethereum Address Manager
+- **Universal Methods**: Accepts all methods ≥ 2^24 (FRC-0042 minimum), preparing for future Account Abstraction
+
+The Ethereum Account actor serves as a bridge between Ethereum wallets and the Filecoin network, allowing existing Ethereum tools to interact seamlessly with Filecoin.

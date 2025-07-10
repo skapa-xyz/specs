@@ -548,6 +548,9 @@ changes:
   - fip: FIP-0048
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0048.md
     description: Introduced address managers for f4 address assignment.
+  - fip: FIP-0055
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0055.md
+    description: Added Ethereum Address Manager (EAM) at f010 for managing Ethereum addresses.
 -->
 
 Address managers are actors that control f4 address assignment within their sub-namespace. An address manager at actor ID `N` controls all addresses starting with `f4{N}f`. For now, only specific "blessed" address managers are permitted, but this restriction will be relaxed when users can deploy custom WebAssembly actors.
@@ -556,6 +559,15 @@ Address managers enable:
 - Foreign addressing schemes (e.g., Ethereum addresses)
 - Predictable address computation before actor deployment
 - Sending funds to addresses before actors exist there
+
+#### Ethereum Address Manager (EAM)
+
+Since FIP-0055, the Ethereum Address Manager (EAM) is a singleton built-in actor at ID address `f010` that manages the `f410` address space. This enables native Ethereum address support in Filecoin:
+
+- **Address Format**: Ethereum addresses (20 bytes) are represented as `f410f{base32(eth_addr || checksum)}`
+- **Bidirectional Mapping**: Ethereum addresses can be cast to f410 addresses and vice versa
+- **Contract Deployment**: The EAM acts as an EVM contract factory supporting CREATE and CREATE2 patterns
+- **Account Creation**: Automatically creates Ethereum Account actors for EOA addresses
 
 ### Placeholder Actors
 
