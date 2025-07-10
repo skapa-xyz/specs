@@ -27,6 +27,9 @@ changes:
   - fip: FIP-0028
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0028.md
     description: Added ability to remove DataCap from client addresses.
+  - fip: FIP-0045
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0045.md
+    description: Decoupled DataCap from market deals, introduced allocations and claims.
 -->
 
 Notaries form a decentralized, globally distributed network of entities that confirm the useful storage demand of Filecoin Plus clients. They are entrusted with DataCap to allocate to clients based on trust and verification. When a Notary evaluates and affirms a client's demand to have real data stored, that client receives a DataCap allocation. 
@@ -41,6 +44,24 @@ Clients are active participants with DataCap allocation for their use cases. The
 ## Technical Implementation
 
 The Filecoin Plus mechanism interfaces with the on-chain protocol through the Verified Registry Actor. When clients make storage deals using their DataCap, these deals receive a 10x quality multiplier, providing greater quality-adjusted power to miners who store Filecoin Plus data.
+
+### DataCap Allocations and Claims
+
+Since FIP-0045, the Filecoin Plus system operates through a two-stage process that decouples DataCap from specific market implementations:
+
+1. **Allocations**: Clients create DataCap allocations by transferring DataCap tokens to the Verified Registry Actor. An allocation specifies:
+   - The storage provider who can claim it
+   - The data CID to be stored
+   - Term limits (minimum and maximum duration)
+   - Expiration deadline for the provider to claim it
+
+2. **Claims**: Storage providers claim allocations when they commit the specified data to a sector. Claims represent the provider's commitment to store the data and enable them to receive quality-adjusted power for the storage duration.
+
+This decoupling enables:
+- Future user-programmed market actors to broker Filecoin Plus deals
+- Simplified quality-adjusted power calculations
+- Term extensions independent of market deal terms
+- DataCap to be represented as fungible tokens
 
 Storage demand on the network shapes the storage offering provided by miners. With the 10x sector quality multiplier for Filecoin Plus deals, clients play a crucial role in shaping the quality of service, geographic distribution, degree of decentralization, and consensus security of the network. All participants - Root Key Holders, Notaries, and Filecoin Plus clients - must be cognizant of the value and responsibility that come with their roles.
 
