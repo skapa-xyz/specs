@@ -56,6 +56,26 @@ changes:
   - fip: FIP-0015
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0015.md
     description: Reverted FIP-0009; Window PoSt messages no longer exempt from BaseFee burn.
+  - fip: FIP-0024
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0024.md
+    description: Adjusted BatchBalancer to 5 nanoFIL and applied batch gas charges to PreCommitBatch.
 -->
 
 All messages in the Filecoin network, including `SubmitWindowedPoSt`, are subject to the same gas fee mechanism described above. Specifically, all messages burn `BaseFee * GasUsed` as a network fee. This uniform treatment ensures fair gas market dynamics and prevents distortion of incentives for message batching and chain bandwidth optimization.
+
+### Batch Operations Gas Charges
+
+Certain batch operations (`PreCommitSectorBatch` and `ProveCommitSectorAggregated`) incur additional gas charges to align network incentives with long-term health. These charges encourage aggregation while ensuring the protocol captures value from network growth:
+
+- **BatchBalancer**: 5 nanoFIL - Sets the minimum fee per batch operation
+- **BatchDiscount**: 1/20 (5%) - Discount factor applied to batch operations
+- **SinglePreCommitGasUsage**: 16,433,324.1825 gas units
+- **SingleProveCommitGasUsage**: 49,299,972.5475 gas units
+
+The batch gas charge is calculated as:
+```
+BatchGasFee = Max(BatchBalancer, BaseFee)
+BatchGasCharge = BatchGasFee * SingleGasUsage * numBatched * BatchDiscount
+```
+
+This charge is paid to the network (sent to f99, the burnt funds address) in addition to the regular gas fees for message execution. The mechanism incentivizes miners to aggregate operations when network `BaseFee` is below the crossover point of approximately 0.32 nanoFIL, while capturing additional protocol revenue when the network is less congested.
