@@ -395,9 +395,17 @@ Tickets are generated as in [Election Proof](glossary#election-proof), but the i
 
 ## Tipset
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0023
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0023.md
+    description: Added tie-breaking rule for tipsets of equal weight.
+-->
+
 A [tipset](https://filecoin.io/blog/tipsets-family-based-approach-to-consensus/) is a set of [blocks](glossary#block) that each have the same [height](glossary#block-height) and parent tipset; the Filecoin [blockchain](glossary#blockchain) is a chain of tipsets, rather than a chain of blocks.
 
-Each tipset is assigned a weight corresponding to the amount of storage the network is provided per the commitments encoded in the tipset's blocks. The consensus protocol of the network directs nodes to build on top of the heaviest chain.
+Each tipset is assigned a weight corresponding to the amount of storage the network is provided per the commitments encoded in the tipset's blocks. The consensus protocol of the network directs nodes to build on top of the heaviest chain. When selecting between tipsets of equal weight, nodes choose the one with the smallest winning [ElectionProof](glossary#election-proof) ticket.
 
 By basing its blockchain on tipsets, Filecoin can allow multiple [storage miners](glossary#storage-miner-actor) to create blocks in the same [epoch](glossary#epoch), increasing network throughput. By construction, this also provides network security: a node that attempts to intentionally prevent the valid blocks of a second node from making it onto the canonical chain runs up against the consensus preference for heavier chains.
 

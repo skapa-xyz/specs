@@ -353,6 +353,14 @@ potentially long chain scans would be required to compute a given block's weight
 
 ### Selecting between Tipsets with equal weight
 
+<!-- YAML
+added: FIP-0023
+changes:
+  - fip: FIP-0023
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0023.md
+    description: Formalized the tie-breaking rule for tipsets of equal weight.
+-->
+
 When selecting between Tipsets of equal weight, a miner chooses the one with the smallest final ElectionProof ticket.
 
 In the case where two Tipsets of equal weight have the same minimum VRF output, the miner will compare the next smallest ticket in the Tipset (and select the Tipset with the next smaller ticket). This continues until one Tipset is selected.
