@@ -44,3 +44,18 @@ Finally, `GasPremium` is the priority fee included by senders to incentivize min
 - A message that runs out of gas fails with an "out of gas" exit code. `GasUsed * BaseFee` will still be burned (in this case `GasUsed = GasLimit`), and the miner will still be rewarded `GasLimit * GasPremium`. This assumes that `GasFeeCap > BaseFee + GasPremium`.
 
 - A low value for the `GasFeeCap` will likely cause the message to be stuck in the message pool, as it will not be attractive-enough in terms of profit for any miner to pick it and include it in a block. When this happens, there is a procedure to update the `GasFeeCap` so that the message becomes more attractive to miners. The sender can push a new message into the message pool (which, by default, will propagate to other miners' message pool) where: i) the identifier of the old and new messages is the same (e.g., same `Nonce`) and ii) the `GasPremium` is updated and increased by at least 25% of the previous value.
+
+## Message-Specific Gas Treatment
+
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0009
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0009.md
+    description: Exempted Window PoSt messages from BaseFee burn (later reverted).
+  - fip: FIP-0015
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0015.md
+    description: Reverted FIP-0009; Window PoSt messages no longer exempt from BaseFee burn.
+-->
+
+All messages in the Filecoin network, including `SubmitWindowedPoSt`, are subject to the same gas fee mechanism described above. Specifically, all messages burn `BaseFee * GasUsed` as a network fee. This uniform treatment ensures fair gas market dynamics and prevents distortion of incentives for message batching and chain bandwidth optimization.
