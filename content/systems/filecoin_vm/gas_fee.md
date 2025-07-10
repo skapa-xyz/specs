@@ -59,6 +59,9 @@ changes:
   - fip: FIP-0024
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0024.md
     description: Adjusted BatchBalancer to 5 nanoFIL and applied batch gas charges to PreCommitBatch.
+  - fip: FIP-0032
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0032.md
+    description: Introduced execution gas, syscall gas, and extern gas for FVM.
 -->
 
 All messages in the Filecoin network, including `SubmitWindowedPoSt`, are subject to the same gas fee mechanism described above. Specifically, all messages burn `BaseFee * GasUsed` as a network fee. This uniform treatment ensures fair gas market dynamics and prevents distortion of incentives for message batching and chain bandwidth optimization.
@@ -79,3 +82,31 @@ BatchGasCharge = BatchGasFee * SingleGasUsage * numBatched * BatchDiscount
 ```
 
 This charge is paid to the network (sent to f99, the burnt funds address) in addition to the regular gas fees for message execution. The mechanism incentivizes miners to aggregate operations when network `BaseFee` is below the crossover point of approximately 0.32 nanoFIL, while capturing additional protocol revenue when the network is less congested.
+
+## FVM Gas Accounting Model
+
+Since FIP-0032, the Filecoin Virtual Machine uses a comprehensive gas accounting model that accurately meters the computational resources consumed during actor execution. This model consists of three components:
+
+### Execution Gas
+
+Execution gas is charged per WASM instruction executed:
+- **Rate**: 1 execution unit per WASM instruction (except structural instructions: `nop`, `drop`, `block`, `loop`, `unreachable`, `return`, `else`, `end`)
+- **Pricing**: 4 gas units per execution unit
+- **Purpose**: Meters the actual computational work performed by actor code
+
+### Syscall Gas
+
+Syscall gas covers the overhead of context switching when actors call system functions:
+- **Fixed cost**: 14,000 gas units per syscall invocation
+- **Purpose**: Accounts for the overhead of switching between WASM and native execution contexts
+- **Note**: The actual work performed by the syscall is charged separately
+
+### Extern Gas
+
+Extern gas covers operations performed outside the WASM runtime, including:
+- IPLD state management (gets and puts)
+- Cryptographic operations
+- Actor creation and deletion
+- Message inclusion and return value costs
+
+This comprehensive gas model ensures accurate resource accounting for both built-in and user-defined actors, providing the foundation for secure execution of arbitrary code on the Filecoin network.
