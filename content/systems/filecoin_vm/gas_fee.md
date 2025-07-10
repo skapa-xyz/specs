@@ -62,6 +62,9 @@ changes:
   - fip: FIP-0032
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0032.md
     description: Introduced execution gas, syscall gas, and extern gas for FVM.
+  - fip: FIP-0057
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0057.md
+    description: Updated gas charging schedule for FEVM, increased storage costs, and introduced memory limits.
 -->
 
 All messages in the Filecoin network, including `SubmitWindowedPoSt`, are subject to the same gas fee mechanism described above. Specifically, all messages burn `BaseFee * GasUsed` as a network fee. This uniform treatment ensures fair gas market dynamics and prevents distortion of incentives for message batching and chain bandwidth optimization.
@@ -110,3 +113,47 @@ Extern gas covers operations performed outside the WASM runtime, including:
 - Message inclusion and return value costs
 
 This comprehensive gas model ensures accurate resource accounting for both built-in and user-defined actors, providing the foundation for secure execution of arbitrary code on the Filecoin network.
+
+## FEVM Gas Schedule Updates
+
+Since FIP-0057, the gas charging schedule has been updated to accurately reflect the costs of operations in the presence of user-programmable smart contracts:
+
+### Storage Costs
+
+- **State storage cost**: Increased from 1,300 to 3,440 gas/byte
+- **Purpose**: Reflects the true cost of persistent storage in the state tree
+- **Impact**: Applies to all newly created state, particularly relevant for FEVM contracts
+
+### Memory Operations
+
+- **Memory copy**: 0.4 gas/byte (reduced from 0.5)
+- **Memory retention**: 10 gas/byte for returned data
+- **Memory initialization**: Variable charges based on memory size
+- **Purpose**: Accurately charge for memory operations that can be arbitrarily large in FEVM
+
+### Syscall Gas Adjustments
+
+Key syscall costs updated for FEVM:
+
+1. **IPLD Operations**:
+   - `block_open`: 187,440 + 10 × block_size gas
+   - `block_create`: Variable based on block size and codec
+   - `block_link`: 3,340 × block_size gas (storage cost)
+
+2. **State Tree Operations**:
+   - State tree reads: Additional charges for traversing the state tree
+   - Actor address resolution: New charges for resolving addresses
+
+3. **Hashing and Cryptography**:
+   - Updated costs for Blake2b, SHA256, and Keccak operations
+   - Signature verification costs adjusted based on benchmarks
+
+### System Limits
+
+FIP-0057 introduced system-wide limits to prevent resource exhaustion:
+
+- **Maximum IPLD block size**: 1 MiB for all newly created blocks
+- **Memory limits**: Overall limits on Wasm memory and table elements
+- **Call depth limit**: Reduced from 1025 to 1024 to align with other blockchain VMs
+
+These updates ensure that gas costs accurately reflect resource consumption, preventing potential DoS attacks and maintaining network stability as FEVM enables arbitrary smart contract execution.
