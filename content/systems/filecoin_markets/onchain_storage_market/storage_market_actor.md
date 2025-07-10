@@ -25,6 +25,9 @@ changes:
   - fip: FIP-0074
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0074.md
     description: Removed automatic deal settlement for new deals, added manual SettleDealPayments method.
+  - fip: FIP-0076
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0076.md
+    description: Added provider-sector mapping, SectorContentChanged method, and support for direct data onboarding.
 -->
 
 # Storage Market Actor
@@ -133,3 +136,63 @@ Storage providers can optimize costs by:
 - Settling multiple deals in a single transaction
 - Choosing periods of low gas demand
 - Settling only payment-bearing deals (zero-fee deals can remain unsettled)
+
+## Direct Data Onboarding Support
+
+### Provider-Sector Mapping
+
+The market actor maintains a mapping of provider addresses to sector numbers and the deal IDs stored in those sectors. This enables tracking which deals are in which sectors without relying on the miner actor state.
+
+State structure additions:
+```go
+// HAMT[ActorID]HAMT[SectorNumber]SectorDealIDs
+ProviderSectors: Cid
+
+// Deal state now includes sector number
+struct DealState {
+    SectorNumber: SectorNumber,
+    // ... other fields
+}
+```
+
+### SectorContentChanged
+
+The market actor implements the `SectorContentChanged` method (FRC-0042 method 2034386435) to support direct data onboarding. When storage providers use `ProveCommitSectors3`, they can notify the market actor of deals being activated without going through traditional deal activation flow.
+
+Method behavior:
+- Receives notifications from miner actor when sectors are activated
+- Validates that nominated deal IDs match the committed piece CID and size
+- Activates deals independently (failures don't affect other deals)
+- Returns acceptance status for each piece
+
+```go
+struct SectorContentChangedParams {
+    Sectors: []SectorChanges,
+}
+
+struct SectorChanges {
+    Sector: SectorNumber,
+    MinimumCommitmentEpoch: ChainEpoch,
+    Added: []PieceChange,
+}
+
+struct PieceChange {
+    Data: Cid,
+    Size: PaddedPieceSize,
+    Payload: []byte, // CBOR-encoded deal ID
+}
+```
+
+### BatchActivateDeals Updates
+
+The `BatchActivateDeals` method (used by traditional onboarding) now includes sector numbers:
+- Records sector-deal associations in the `ProviderSectors` mapping
+- Enables reverse lookup from deal ID to sector number
+- Maintains compatibility with existing workflows
+
+### GetDealSector
+
+New exported method `GetDealSector` (method 2611213344) returns the sector number for an active deal:
+- Aborts with `EX_DEAL_NOT_ACTIVATED` (33) if deal not yet activated
+- Provides visibility into deal-sector relationships
+- Supports monitoring and verification workflows
