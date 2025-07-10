@@ -16,6 +16,9 @@ changes:
   - fip: FIP-0020
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0020.md
     description: WithdrawBalance now returns the actual amount withdrawn.
+  - fip: FIP-0022
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0022.md
+    description: PublishStorageDeals no longer fails entirely when individual deals are invalid.
 -->
 
 # Storage Market Actor
@@ -48,6 +51,16 @@ This collateral is returned to the storage provider when all deals in the sector
 ```text
 $$MinimumProviderDealCollateral = 1\% \times FILCirculatingSupply \times \frac{DealRawByte}{max(NetworkBaseline, NetworkRawBytePower)}$$
 ```
+
+## Deal Publishing
+
+The `PublishStorageDeals` method is used to publish storage deals on-chain. As of FIP-0022, this method has improved error handling that prevents a single invalid deal from causing the entire batch to fail. Instead:
+
+- Valid deals in the batch are successfully published
+- Invalid deals (due to validation errors, insufficient balance, or other issues) are dropped
+- The return value includes both the deal IDs for successful deals and a bitfield indicating which deals from the input were valid
+
+This change significantly improves the user experience for storage providers by making deal publishing more resilient to individual deal failures. The method only returns an error if all deals fail validation or if an internal error occurs.
 
 ## Balance Withdrawals
 

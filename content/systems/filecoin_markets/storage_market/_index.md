@@ -82,7 +82,7 @@ Data is now transferred, both parties have agreed, and it's time to publish the 
 12. First, the `StorageProvider` adds collateral for the deal as needed to the `StorageMarketActor` (using `AddBalance`).
 13. Then, the `StorageProvider` prepares and signs the on-chain `StorageDeal` message with the `StorageDealProposal` signed by the client and its own signature. It can now either send this message back to the client or call `PublishStorageDeals` on the `StorageMarketActor` to publish the deal. It is recommended for `StorageProvider` to send back the signed message before `PublishStorageDeals` is called.
 14. After calling `PublishStorageDeals`, the `StorageProvider` sends a message to the `StorageClient` on the `Storage Deal Protocol` with the CID of the message that it is putting on chain for convenience.
-15. If all goes well, the `StorageMarketActor` responds with an on-chain `DealID` for the published deal.
+15. If all goes well, the `StorageMarketActor` responds with on-chain `DealID`s for the published deals. As of FIP-0022, the `PublishStorageDeals` method will publish all valid deals even if some deals in the batch are invalid, returning both the deal IDs and a bitfield indicating which input deals were successfully published.
 
 Finally, the `StorageClient` verifies the deal.
 
