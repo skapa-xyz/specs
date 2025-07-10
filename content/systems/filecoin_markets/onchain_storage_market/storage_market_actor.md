@@ -22,6 +22,9 @@ changes:
   - fip: FIP-0060
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0060.md
     description: Increased deal maintenance interval from 1 day to 30 days to reduce cron execution costs.
+  - fip: FIP-0074
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0074.md
+    description: Removed automatic deal settlement for new deals, added manual SettleDealPayments method.
 -->
 
 # Storage Market Actor
@@ -69,24 +72,64 @@ This change significantly improves the user experience for storage providers by 
 
 The Storage Market Actor maintains escrow balances for both clients and providers. These balances can be withdrawn using the `WithdrawBalance` method. As of FIP-0020, this method returns the actual amount withdrawn, which may be less than the requested amount if the available balance is insufficient. This improvement provides better visibility and traceability of FIL flow, particularly important for financial reporting.
 
-## Deal Maintenance and Cron Operations
+## Deal Maintenance and Settlement
 
-The Storage Market Actor performs regular maintenance on active deals through Filecoin's cron mechanism. This maintenance includes:
+### Automatic Settlement (Legacy)
+
+Prior to FIP-0074, the Storage Market Actor performed automatic maintenance on all active deals through Filecoin's cron mechanism every 30 days (FIP-0060). This maintenance included:
 - Processing incremental payments from clients to providers
 - Handling deal state updates
 - Cleaning up expired deals
 
-### Maintenance Interval
+Since FIP-0074, automatic settlement only applies to deals activated before the upgrade. New deals require manual settlement.
 
-Since FIP-0060, the deal maintenance interval has been increased from 1 day (2,880 epochs) to 30 days (86,400 epochs):
+### Manual Deal Settlement
+
+FIP-0074 introduced the `SettleDealPayments` method to allow storage providers to manually settle deal payments:
 
 ```rust
-const DEAL_UPDATES_INTERVAL = 30 * EPOCHS_IN_DAY
+struct SettleDealPaymentsParams {
+    Deals: Bitfield,  // Deal IDs to settle
+}
+
+struct SettleDealPaymentsReturn {
+    Results: {
+        SuccessCount: u32,
+        FailCodes: []{ Index: u32, ExitCode: ExitCode },
+    },
+    Settlements: []DealSettlementSummary,
+}
+
+struct DealSettlementSummary {
+    Payment: TokenAmount,  // Incremental amount paid to provider
+    Completed: bool,       // Whether deal has settled for final time
+}
 ```
 
-This change significantly reduces the computational burden on the network:
-- **Previous cost**: ~73 billion gas units per epoch for market cron operations
-- **Current cost**: ~2.4 billion gas units per epoch (97% reduction)
-- **Impact**: Improved chain validation times and reduced resource requirements
+#### Settlement Rules
+- **Non-existent deals**: Fail with `USR_NOT_FOUND`
+- **Unactivated/unexpired deals**: Succeed with no effect
+- **Expired or completed deals**: Fail with `EX_DEAL_EXPIRED`
+- **Terminated deals**: Abort with `USR_ILLEGAL_ARGUMENT`
 
-Each deal's maintenance is scheduled based on its deal ID modulo the maintenance interval, ensuring an even distribution of maintenance work across epochs. The rescheduling happens automatically when deals are first processed after the FIP activation, requiring no migration.
+### Termination Processing
+
+Since FIP-0074, the `OnMinerSectorsTerminate` method immediately:
+1. Makes final payment settlement
+2. Charges applicable penalties
+3. Cleans up deal state
+
+This replaces the previous deferred cleanup via cron, ensuring immediate state consistency.
+
+### Impact on Gas Costs
+
+The shift from automatic to manual settlement:
+- **Removes risk**: Cron operations no longer threaten to exceed chain processing capacity
+- **Aligns costs**: Storage providers pay gas for settlement, incentivizing efficient batching
+- **Enables scaling**: Deal volume can grow without impacting cron execution
+- **Levels playing field**: User-programmed markets aren't disadvantaged by subsidized settlement
+
+Storage providers can optimize costs by:
+- Settling multiple deals in a single transaction
+- Choosing periods of low gas demand
+- Settling only payment-bearing deals (zero-fee deals can remain unsettled)
