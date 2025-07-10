@@ -18,6 +18,9 @@ changes:
   - fip: FIP-0013
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0013.md
     description: Added ProveCommitSectorAggregated method to enable aggregated proof verification for multiple sectors.
+  - fip: FIP-0014
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0014.md
+    description: Allowed V1 proof sectors to be extended up to a maximum of 540 days.
 -->
 
 Once the sector has been generated and the deal has been incorporated into the Filecoin blockchain, the storage miner begins generating Proofs-of-Spacetime (PoSt) on the sector, starting to potentially win block rewards and also earn storage fees. Parameters are set so that miners generate and capture more value if they guarantee that their sectors will be around for the duration of the original contract. However, some bounds are placed on a sectorʼs lifetime to improve the network performance.
@@ -31,6 +34,11 @@ All sectors are expected to remain live until the end of their sector lifetime a
 As with every system it is expected that sectors will present faults. Although this might degrade the quality offered by the network, the reaction of the miner to the fault drives system decisions on whether or not the miner should be penalized. A miner can recover the faulty sector, let the system terminate the sector automatically after 42 days of faults, or proactively terminate the sector immediately in the case of unrecoverable data loss. In case of a faulty sector, a small penalty fee approximately equal to the block reward that the sector would win per day is applied. The fee is calculated per day of the sector being unavailable to the network, i.e. until the sector is recovered or terminated.
 
 Miners can extend the lifetime of a sector at any time, though the sector will be expected to remain live until it has reached the end of the new sector lifetime. This can be done by submitting a `ExtendedSectorExpiration` message to the chain.
+
+## Sector Extension Limitations
+
+### V1 Proof Sectors
+Sectors sealed using V1 proof before network version 7 (November 27, 2020) have a special limitation on their maximum lifetime. These sectors can only be extended up to a maximum total lifetime of 540 days, including the days they have already been active. This restriction was introduced to address potential long-term security concerns with the V1 proof construction while still allowing miners who sealed these sectors to benefit from extensions.
 
 A sector can be in one of the following states.
 
