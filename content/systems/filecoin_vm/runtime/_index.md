@@ -18,6 +18,9 @@ changes:
   - fip: FIP-0049
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0049.md
     description: Added events_root field to support actor events.
+  - fip: FIP-0072
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0072.md
+    description: Improved event syscall API with separate buffers and refined limits.
 -->
 
 A `MessageReceipt` contains the result of a top-level message execution. Every syntactically valid and correctly signed message can be included in a block and will produce a receipt from execution.
@@ -102,10 +105,49 @@ fn emit_event(event_off: u32, event_len: u32) -> Result<()>;
 
 ### Event Limits
 
-- Maximum 32 bytes per key
+Since FIP-0072, event limits have been refined:
+- Maximum 31 bytes per key (reduced from 32 for compact CBOR encoding)
 - Maximum 8 KiB total value size per event
-- Maximum 256 entries per event
+- Maximum 255 entries per event (reduced from 256 for single-byte CBOR length)
 - Only IPLD_RAW (0x55) codec currently supported
+
+### Improved Event Syscall API
+
+FIP-0072 introduced an optimized `emit_event` syscall that eliminates CBOR encoding overhead:
+
+**Previous API** (single CBOR-encoded buffer):
+```rust
+pub fn emit_event(event_off: *const u8, event_len: u32) -> Result<()>
+```
+
+**Current API** (three separate buffers):
+```rust
+pub fn emit_event(
+    event_off: *const EventEntry,
+    event_len: u32,
+    key_off: *const u8,
+    key_len: u32,
+    value_off: *const u8,
+    value_len: u32,
+) -> Result<()>
+```
+
+Where `EventEntry` is a packed struct:
+```rust
+#[repr(C, packed)]
+pub struct EventEntry {
+    pub flags: u64,      // Event flags (indexing hints)
+    pub codec: u64,      // Value codec (currently only IPLD_RAW)
+    pub key_size: u32,   // Size of key in bytes
+    pub value_size: u32, // Size of value in bytes
+}
+```
+
+This design enables:
+- Precise gas charging based on actual data sizes
+- Concurrent validation during deserialization
+- Elimination of CBOR parsing overhead
+- More accurate gas model for non-EVM actors
 
 ### Indexing Flags
 
@@ -114,4 +156,4 @@ Events support indexing hints through flags:
 - `0x02`: Index by value
 - `0x03`: Index by both key and value
 
-These flags are hints to clients for constructing efficient indices for event queries.
+Note: Since FIP-0072, indexing costs have been removed from gas calculations as this feature was not being used.
