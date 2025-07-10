@@ -8,6 +8,14 @@ dashboardAudit: wip
 dashboardTests: 0
 ---
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0073
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0073.md
+    description: Modified self_destruct syscall to remove beneficiary parameter and require explicit fund transfers.
+-->
+
 # Payment Channels
 
 Payment channels are generally used as a mechanism to increase the scalability of blockchains and enable users to transact without involving (i.e., publishing their transactions on) the blockchain, which: i) increases the load of the system, and ii) incurs gas costs for the user. Payment channels generally use a smart contract as an agreement between the two participants. In the Filecoin blockchain Payment Channels are realised by the `paychActor`.
@@ -123,6 +131,22 @@ Summarising, we have the following sequence:
 8. 12-hour period ends.
 9. Either the channel sender or the channel recipient calls `Collect`.
 10. Funds are transferred to the channel recipient's account and any unclaimed balance goes back to channel sender.
+
+## Channel Destruction
+
+Payment channels can be destroyed using the `self_destruct` syscall. Since FIP-0073, this syscall has been simplified:
+
+### Previous Behavior
+- `self_destruct(beneficiary)` would transfer remaining funds to a beneficiary address before deleting the actor
+- This transfer was implicit and didn't appear in traces or create the beneficiary if needed
+
+### Current Behavior
+- `self_destruct(burn: bool)` takes a boolean parameter instead of a beneficiary address
+- If `burn` is `false` and there are remaining funds, the syscall fails with `IllegalOperation`
+- If `burn` is `true`, any remaining funds are transferred to the burnt funds account
+- To transfer funds before destruction, actors must explicitly use the `send` syscall first
+
+This change ensures all fund transfers follow standard message semantics and appear properly in execution traces.
 
 ## Payment Channels as part of the Filecoin Retrieval
 
