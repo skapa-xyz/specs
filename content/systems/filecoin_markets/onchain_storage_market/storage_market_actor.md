@@ -19,6 +19,9 @@ changes:
   - fip: FIP-0022
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0022.md
     description: PublishStorageDeals no longer fails entirely when individual deals are invalid.
+  - fip: FIP-0060
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0060.md
+    description: Increased deal maintenance interval from 1 day to 30 days to reduce cron execution costs.
 -->
 
 # Storage Market Actor
@@ -65,3 +68,25 @@ This change significantly improves the user experience for storage providers by 
 ## Balance Withdrawals
 
 The Storage Market Actor maintains escrow balances for both clients and providers. These balances can be withdrawn using the `WithdrawBalance` method. As of FIP-0020, this method returns the actual amount withdrawn, which may be less than the requested amount if the available balance is insufficient. This improvement provides better visibility and traceability of FIL flow, particularly important for financial reporting.
+
+## Deal Maintenance and Cron Operations
+
+The Storage Market Actor performs regular maintenance on active deals through Filecoin's cron mechanism. This maintenance includes:
+- Processing incremental payments from clients to providers
+- Handling deal state updates
+- Cleaning up expired deals
+
+### Maintenance Interval
+
+Since FIP-0060, the deal maintenance interval has been increased from 1 day (2,880 epochs) to 30 days (86,400 epochs):
+
+```rust
+const DEAL_UPDATES_INTERVAL = 30 * EPOCHS_IN_DAY
+```
+
+This change significantly reduces the computational burden on the network:
+- **Previous cost**: ~73 billion gas units per epoch for market cron operations
+- **Current cost**: ~2.4 billion gas units per epoch (97% reduction)
+- **Impact**: Improved chain validation times and reduced resource requirements
+
+Each deal's maintenance is scheduled based on its deal ID modulo the maintenance interval, ensuring an even distribution of maintenance work across epochs. The rescheduling happens automatically when deals are first processed after the FIP activation, requiring no migration.
