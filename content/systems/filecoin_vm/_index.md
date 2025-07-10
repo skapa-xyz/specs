@@ -87,6 +87,59 @@ Each built-in actor exports specific methods for public use:
 - **Datacap Actor**: Full token interface (Transfer, Balance, Allowance, etc.)
 - **Verified Registry Actor**: AddVerifiedClient, GetClaims, ExtendClaimTerms, etc.
 
+## Filecoin EVM (FEVM)
+
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0054
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0054.md
+    description: Introduced the Filecoin EVM runtime actor for running Ethereum smart contracts.
+-->
+
+Since FIP-0054, Filecoin supports the execution of Ethereum smart contracts through the Filecoin EVM (FEVM) runtime actor. This built-in actor enables Ethereum compatibility while maintaining integration with Filecoin's unique features.
+
+### EVM Runtime Actor
+
+The FEVM runtime actor:
+- **Runs EVM bytecode**: Compatible with Ethereum Paris fork plus EIP-3855 (PUSH0 opcode)
+- **Embeds an EVM interpreter**: Executes smart contracts within the FVM environment
+- **Translates opcodes**: Maps Ethereum operations to Filecoin primitives
+- **Manages state**: Maps EVM storage model to Filecoin's IPLD-based state
+
+### Key Features
+
+1. **Address Mapping**: 
+   - Ethereum addresses are mapped to Filecoin f4 addresses (via Ethereum Address Manager)
+   - Maintains compatibility with existing Ethereum tooling
+   - Supports CREATE and CREATE2 deployment patterns
+
+2. **Precompiles Support**:
+   - All standard Ethereum precompiles (ecrecover, SHA256, etc.)
+   - Filecoin-specific precompiles for native actor interaction
+   - Call actor methods, resolve addresses, and access Filecoin state
+
+3. **State Management**:
+   - EVM storage is persisted as IPLD blocks
+   - Efficient storage through deduplication and content addressing
+   - Compatible with Ethereum's storage slot model
+
+### Differences from Ethereum
+
+While striving for maximum compatibility, some differences exist:
+- **Block Time**: ~30 seconds vs Ethereum's ~12 seconds
+- **Chain ID**: Filecoin mainnet uses 314, Calibration testnet uses 314159
+- **Gas Model**: Different pricing due to FVM's execution model
+- **No Pending Pool**: Transactions execute in the epoch they're included
+
+### Actor Interface
+
+The EVM runtime actor exposes these main methods:
+- **Constructor**: Deploys new EVM contracts
+- **InvokeContract**: Executes contract methods
+- **GetBytecode**: Retrieves deployed bytecode
+- **GetStorageAt**: Reads contract storage
+
 ## State Tree
 
 Any operation applied (i.e., executed) on the Filecoin VM produces an output in the form of a _State Tree_ (discussed below). The latest _State Tree_ is the current source of truth in the Filecoin Blockchain. The _State Tree_ is identified by a CID, which is stored in the IPLD store.
