@@ -36,6 +36,9 @@ changes:
   - fip: FIP-0067
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0067.md
     description: Established PoRep security policy and replacement sealing enforcement mechanism.
+  - fip: FIP-0082
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0082.md
+    description: Added support for aggregated replica update proofs in ProveReplicaUpdates3.
 -->
 
 Once the sector has been generated and the deal has been incorporated into the Filecoin blockchain, the storage miner begins generating Proofs-of-Spacetime (PoSt) on the sector, starting to potentially win block rewards and also earn storage fees. Parameters are set so that miners generate and capture more value if they guarantee that their sectors will be around for the duration of the original contract. However, some bounds are placed on a sectorʼs lifetime to improve the network performance.
@@ -118,6 +121,22 @@ The process works by:
 This mechanism unlocks the large amount of CC capacity already committed to the network, allowing it to be quickly utilized for storing real client data. The protocol is limited to CC sectors as it requires access to the sector key commitment that is only available for sectors without existing deals.
 
 Since FIP-0041, a new `ProveReplicaUpdates2` method (method number 29) is available that includes a `new_unsealed_cid` field. This forward-compatible version prepares for future changes in storage market mechanisms where unsealed CIDs will serve as primary data identifiers.
+
+### Aggregated Replica Updates (ProveReplicaUpdates3)
+
+FIP-0082 introduces support for aggregated proof verification in the `ProveReplicaUpdates3` method (method number 35, originally from FIP-0076). This allows storage providers to update multiple sectors efficiently in a single transaction by submitting an aggregated Groth16 proof.
+
+Key features:
+- **Batch Size**: Minimum 3 sectors, maximum 512 sectors per aggregation
+- **Gas Efficiency**: Verification time and gas costs scale logarithmically with the number of proofs
+- **Proof Format**: Uses SnarkPack V2 aggregation (same as ProveCommitAggregate)
+- **Gas Pricing**: Linear component (80,000 gas per sector) plus step-wise costs based on proof count
+
+Gas cost breakdown:
+- **32 GiB sectors**: 80,000 gas per sector plus step-wise costs ranging from 86.5M to 99M gas
+- **64 GiB sectors**: 80,000 gas per sector plus step-wise costs ranging from 86.5M to 99.5M gas
+
+The aggregated proof mechanism significantly reduces the per-sector cost of replica updates, making Snap Deals more economically viable for storage providers updating many sectors. Like ProveCommitAggregate, it includes an additional batch gas charge to align incentives.
 
 ## PoRep Security Policy and Replacement Sealing
 
