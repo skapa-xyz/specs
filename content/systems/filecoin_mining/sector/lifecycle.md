@@ -33,6 +33,9 @@ changes:
   - fip: FIP-0052
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0052.md
     description: Increased maximum sector commitment duration from 540 days to 1278 days (3.5 years).
+  - fip: FIP-0067
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0067.md
+    description: Established PoRep security policy and replacement sealing enforcement mechanism.
 -->
 
 Once the sector has been generated and the deal has been incorporated into the Filecoin blockchain, the storage miner begins generating Proofs-of-Spacetime (PoSt) on the sector, starting to potentially win block rewards and also earn storage fees. Parameters are set so that miners generate and capture more value if they guarantee that their sectors will be around for the duration of the original contract. However, some bounds are placed on a sectorʼs lifetime to improve the network performance.
@@ -115,3 +118,45 @@ The process works by:
 This mechanism unlocks the large amount of CC capacity already committed to the network, allowing it to be quickly utilized for storing real client data. The protocol is limited to CC sectors as it requires access to the sector key commitment that is only available for sectors without existing deals.
 
 Since FIP-0041, a new `ProveReplicaUpdates2` method (method number 29) is available that includes a `new_unsealed_cid` field. This forward-compatible version prepares for future changes in storage market mechanisms where unsealed CIDs will serve as primary data identifiers.
+
+## PoRep Security Policy and Replacement Sealing
+
+FIP-0067 establishes a comprehensive policy to address potential vulnerabilities in Proof-of-Replication (PoRep) theory or implementation. While no PoRep issues are currently known, this policy ensures the network can respond effectively if a flaw is discovered.
+
+### Replacement Sealing Mechanism
+
+The replacement sealing mechanism introduces enforcement for sectors with commitments longer than 1.5 years (the DeactivationTarget). Key components include:
+
+**Miner State Properties:**
+- `InitialOldSectors`: Number of sectors sealed with vulnerable PoRep that must be deactivated
+- `DeactivatedOldSectors`: Count of old sectors that have been successfully deactivated
+
+**Timeline Parameters:**
+- `GracePeriod`: 60 days during which no enforcement actions are taken
+- `DeactivationTarget`: 1.5 years - the deadline for all vulnerable sectors to be deactivated
+- `StartEpoch`: Network upgrade epoch when replacement sealing begins
+
+**Deactivation Progress:**
+The `DeactivationProgress` metric tracks each miner's replacement progress:
+```
+DeactivationProgress = GracePeriod + (DeactivationTarget - GracePeriod) * DeactivatedOldSectors / InitialOldSectors
+```
+
+### Enforcement Actions
+
+If a storage provider falls behind their deactivation schedule:
+
+1. **Block Production Eligibility**: Miners cannot produce blocks if their deactivation progress lags behind the current epoch
+2. **Deadline Faults**: If progress is >24 hours behind, the deadline is marked faulty (recoverable)
+3. **Deadline Termination**: If progress is >7 days behind, the deadline is terminated (non-recoverable)
+
+### Policy Response to PoRep Vulnerabilities
+
+In case a PoRep flaw is discovered:
+1. A new, secure PoRep algorithm is implemented
+2. The vulnerable algorithm is disabled for new sectors
+3. The deactivation timeline begins for existing vulnerable sectors
+4. Sector extensions are prohibited for vulnerable sectors
+5. A `ReplaceSector(OldSector, NewSector)` method allows providers to replace vulnerable sectors without termination fees
+
+This policy ensures network security can be maintained even with longer sector commitments (up to 3.5 years), as vulnerable sectors can be systematically replaced rather than waiting for natural expiration.
