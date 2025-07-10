@@ -184,12 +184,20 @@ A message is a call to an actor in the Filecoin VM. The term _message_ is used t
 
 ## Miner
 
-A miner is an actor in the Filecoin system performing a service in the network for a reward.
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0018
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0018.md
+    description: Terminology updated to "Storage Provider" in marketing and communications materials.
+-->
+
+A miner is an actor in the Filecoin system performing a service in the network for a reward. Note: Following FIP-0018, the term "Storage Provider" is preferred in marketing and communications materials, though "miner" remains in technical contexts.
 
 There are three types of miners in Filecoin:
 
-- [Storage miners](glossary#storage-miner-actor), who store files on behalf of clients.
-- [Retrieval miners](glossary#retrieval-miner), who deliver stored files to clients.
+- [Storage miners](glossary#storage-miner-actor) (Storage Providers), who store files on behalf of clients.
+- [Retrieval miners](glossary#retrieval-miner) (Retrieval Providers), who deliver stored files to clients.
 - Repair miners, who replicate files to keep them available in the network, when a storage miner presents a fault.
 
 ## Multisig Actor
@@ -266,7 +274,15 @@ This measurement is the size of a sector in bytes.
 
 ## Retrieval miner
 
-A [_retrieval miner_](retrieval_market#retrieval_provider) is a Filecoin participant that enters in retrieval [deals](glossary#deal) with clients, agreeing to supply a client with a particular file in exchange for [FIL](glossary#fil). Note that unlike [storage miners](glossary#storage-miner-actor), retrieval miners are not additionally rewarded with the ability to add blocks to (i.e., extend) the Filecoin blockchain; their only reward is the fee they extract from the client.
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0018
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0018.md
+    description: Also referred to as "Retrieval Provider" in marketing and communications materials.
+-->
+
+A [_retrieval miner_](retrieval_market#retrieval_provider) is a Filecoin participant that enters in retrieval [deals](glossary#deal) with clients, agreeing to supply a client with a particular file in exchange for [FIL](glossary#fil). Note that unlike [storage miners](glossary#storage-miner-actor), retrieval miners are not additionally rewarded with the ability to add blocks to (i.e., extend) the Filecoin blockchain; their only reward is the fee they extract from the client. Following FIP-0018, retrieval miners are also referred to as "Retrieval Providers" in marketing and communications.
 
 ## Repair
 
@@ -318,11 +334,31 @@ The [_Storage Market Actor_](sysactors) is responsible for managing storage and 
 
 ## Storage Miner Actor
 
-The [_Storage Miner Actor_](sysactors) commits storage to the network, stores data on behalf of the network and is rewarded in [FIL](glossary#fil) for the storage service. The storage miner actor is responsible for collecting proofs and reaching consensus on the latest state of the storage network. When they create a block, storage miners are rewarded with newly minted FIL, as well as the message fees they can levy on other participants seeking to include messages in the block.
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0018
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0018.md
+    description: Also referred to as "Storage Provider" in marketing and communications materials.
+-->
+
+The [_Storage Miner Actor_](sysactors) commits storage to the network, stores data on behalf of the network and is rewarded in [FIL](glossary#fil) for the storage service. The storage miner actor is responsible for collecting proofs and reaching consensus on the latest state of the storage network. When they create a block, storage miners are rewarded with newly minted FIL, as well as the message fees they can levy on other participants seeking to include messages in the block. Note: Following FIP-0018, storage miners are also referred to as "Storage Providers" in marketing and communications.
 
 ## Storage Power Actor
 
 The [_Storage Power Actor_](sysactors) is responsible for keeping track of the storage power allocated at each storage miner.
+
+## Storage Provider
+
+<!-- YAML
+added: FIP-0018
+changes:
+  - fip: FIP-0018
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0018.md
+    description: New terminology introduced for storage miners in marketing and communications.
+-->
+
+Storage Provider (SP) is the preferred terminology for [storage miners](glossary#storage-miner-actor) in marketing and communications materials as of FIP-0018. This terminology better represents the service-oriented nature of entities that provide storage infrastructure and services to the Filecoin network. The technical implementation continues to use the term "storage miner" in code and protocol specifications.
 
 ## Storage Fault Slashing
 
