@@ -84,17 +84,21 @@ Consensus Fault Slashing is the penalty that a miner incurs for committing conse
 
 The [_Cron Actor_](sysactors) is a scheduler actor that runs critical functions at every epoch.
 
+## DataCap
+
+DataCap is a one-time credit allocated by Notaries to Filecoin Plus clients. When a client makes a storage deal and identifies it as a Filecoin Plus verified deal, the DataCap is consumed and the miner receives a 10x deal quality multiplier for that deal, resulting in increased storage power and block rewards.
+
 ## Deal
 
 Two participants in the Filecoin network can enter into a [_deal_](storage_market#deal-flow) in which one party contracts the services of the other for a given price agreed between the two. The Filecoin specification currently details _storage deals_ (in which one party agrees to store data for the other for a specified length of time) and _retrieval deals_ (in which one party agrees to transmit specified data to the other).
 
 ## Deal Quality Multiplier
 
-This factor is assigned to different deal types (committed capacity, regular deals, and verified client deals) to reward different content.
+This factor is assigned to different deal types (committed capacity, regular deals, and Filecoin Plus verified deals) to reward different content.
 
 ## Deal Weight
 
-This weight converts spacetime occupied by deals into consensus power. Deal weight of verified client deals in a sector is called Verified Deal Weight and will be greater than the regular deal weight.
+This weight converts spacetime occupied by deals into consensus power. Deal weight of Filecoin Plus verified deals in a sector is called Verified Deal Weight and will be greater than the regular deal weight.
 
 ## DRAND
 
@@ -129,6 +133,10 @@ _FIL_ is the name of the Filecoin unit of currency; it is alternatively denoted 
 ## Filecoin
 
 The term _Filecoin_ is used generically to refer to the Filecoin project, protocol, and network.
+
+## Filecoin Plus
+
+Filecoin Plus is a program (previously called Verified Clients) that aims to maximize the amount of useful storage on Filecoin by adding a layer of social trust. The program allows clients to make verified deals that carry a 10x deal quality multiplier, incentivizing miners to store real, valuable data. The program is governed by Root Key Holders who appoint Notaries, who in turn allocate DataCap to clients.
 
 ## Finality
 
@@ -286,7 +294,7 @@ Sectors can contain data from multiple deals and multiple clients. Sectors are a
 
 ## Sector Quality Multiplier
 
-Sector quality is assigned on Activation (the epoch when the miner starts proving theyʼre storing the file). The sector quality multiplier is computed as an average of deal quality multipliers (committed capacity, regular deals, and verified client deals), weighted by the amount of spacetime each type of deal occupies in the sector.
+Sector quality is assigned on Activation (the epoch when the miner starts proving theyʼre storing the file). The sector quality multiplier is computed as an average of deal quality multipliers (committed capacity, regular deals, and Filecoin Plus verified deals), weighted by the amount of spacetime each type of deal occupies in the sector.
 
 ## Sector Spacetime
 
@@ -337,13 +345,21 @@ Each tipset is assigned a weight corresponding to the amount of storage the netw
 
 By basing its blockchain on tipsets, Filecoin can allow multiple [storage miners](glossary#storage-miner-actor) to create blocks in the same [epoch](glossary#epoch), increasing network throughput. By construction, this also provides network security: a node that attempts to intentionally prevent the valid blocks of a second node from making it onto the canonical chain runs up against the consensus preference for heavier chains.
 
-## Verified client
+## Filecoin Plus Client
 
-To further incentivize the storage of "useful" data over simple [capacity commitments](glossary#capacity-commitment), [storage miners](glossary#storage-miner-actor) have the additional opportunity to compete for special [deals](glossary#deal) offered by verified clients. Such clients are certified with respect to their intent to offer deals involving the storage of meaningful data, and the power a storage miner earns for these deals is augmented by a multiplier.
+To further incentivize the storage of "useful" data over simple [capacity commitments](glossary#capacity-commitment), [storage miners](glossary#storage-miner-actor) have the additional opportunity to compete for special [deals](glossary#deal) offered by Filecoin Plus clients. Such clients are certified by Notaries with respect to their intent to offer deals involving the storage of meaningful data, and the power a storage miner earns for these deals is augmented by a 10x multiplier.
+
+## Notary
+
+Notaries are selected to act as fiduciaries for the Filecoin network in the Filecoin Plus program. They are entrusted with DataCap to allocate to clients in order to subsidize reliable and useful storage on the network. Notaries verify that clients receive a DataCap allocation commensurate with the level of trust that is warranted based on information provided.
+
+## Root Key Holder
+
+Root Key Holders are signers to a multisig on chain with the power to grant and remove Notaries in the Filecoin Plus program. They act as executors for decisions made by the community governance on-chain. The role of the Root Key Holder is not to make subjective decisions, but rather to execute community decisions transparently.
 
 ## Verified Registry Actor
 
-The [_Verified Registry Actor_](sysactors) is responsible for managing [verified clients](glossary#verified-client).
+The [_Verified Registry Actor_](sysactors) is responsible for managing [Filecoin Plus clients](glossary#filecoin-plus-client), Notaries, and DataCap allocations.
 
 ## VDF
 

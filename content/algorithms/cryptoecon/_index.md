@@ -30,7 +30,7 @@ The following table summarizes initial parameter recommendations for Filecoin. M
 | Percent simple minting vs baseline minting | 30% / 70%                                                                                |
 | Reward delay and linear vesting period     | 0 days                                                                                   |
 | Linear vesting period                      | 180 days                                                                                 |
-| Sector quality multipliers                 | Committed Capacity: 1x <br> Regular Deals: 1x <br> Verified Client Deals: 10x            |
+| Sector quality multipliers                 | Committed Capacity: 1x <br> Regular Deals: 1x <br> Filecoin Plus Deals: 10x            |
 | Initial pledge function                    | 20 days worth of block reward + <br> share of 30% qa power-normalized circulating supply |
 | Initial Pledge Cap                         | 1FIL/32GiB QA Power                                                                      |
 | Minimum sector lifetime                    | 180 days                                                                                 |
