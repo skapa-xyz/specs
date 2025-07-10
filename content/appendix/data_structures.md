@@ -63,9 +63,58 @@ a long block.
 
 For Filecoin, byte arrays representing RLE+ bitstreams are encoded using [LSB 0](https://en.wikipedia.org/wiki/Bit_numbering#LSB_0_bit_numbering) bit numbering.
 
-## HAMT
+## HAMT (Hash Array Mapped Trie)
 
-See the draft [IPLD hash map spec](https://github.com/ipld/specs/blob/master/data-structures/hashmap.md) for details on implementing the HAMT used for the global state tree map and throughout the actor code.
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0007
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0007.md
+    description: Upgraded to HAMT v3 with performance optimizations including dirty node tracking, eliminated unnecessary cache clearing, and more efficient pointer serialization.
+-->
+
+Filecoin uses HAMT (Hash Array Mapped Trie) v3 as the primary data structure for the global state tree and throughout actor code. The HAMT provides an efficient key-value store with the following characteristics:
+
+### Key Features
+- **Efficient lookups and updates**: O(log n) time complexity for get/set operations
+- **Space-efficient**: Only allocates nodes as needed
+- **Merkle proof compatible**: Each node has a CID for verification
+
+### Version 3 Optimizations
+The current HAMT implementation includes several performance optimizations:
+
+1. **Dirty node tracking**: Only flushes modified nodes to the blockstore, reducing unnecessary writes
+2. **Persistent caching**: Retains loaded nodes in memory after flush operations
+3. **Deferred writes**: All blockstore writes occur during flush rather than immediately
+4. **Efficient pointer serialization**: Uses CBOR type discrimination instead of keyed maps, saving 3 bytes per pointer
+
+For implementation details, see the [IPLD hash map spec](https://github.com/ipld/specs/blob/master/data-structures/hashmap.md) and the [go-hamt-ipld](https://github.com/filecoin-project/go-hamt-ipld) reference implementation.
+
+## AMT (Array Mapped Trie)
+
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0007
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0007.md
+    description: Upgraded to AMT v3 with performance optimizations including dirty node tracking and optimized ForEach traversals.
+-->
+
+The AMT (Array Mapped Trie) is a data structure used in Filecoin for storing sequential data with integer indices. It provides similar benefits to HAMT but optimized for array-like access patterns.
+
+### Key Features
+- **Sparse array support**: Efficiently stores arrays with gaps
+- **Efficient range queries**: Optimized for sequential access
+- **Fixed height**: Predictable performance characteristics
+
+### Version 3 Optimizations
+Similar to HAMT v3, the AMT implementation includes:
+
+1. **Dirty node tracking**: Only flushes modified nodes during updates
+2. **Optimized traversals**: ForEach operations only load nodes containing keys within the traversal range
+3. **Reduced blockstore operations**: Minimizes unnecessary reads and writes
+
+For implementation details, see the [go-amt-ipld](https://github.com/filecoin-project/go-amt-ipld) reference implementation.
 
 ## Other Considerations
 
