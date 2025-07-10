@@ -111,3 +111,15 @@ Since FIP-0055, the `EthereumAccountActor` represents Ethereum Externally-Owned 
 - **Universal Methods**: Accepts all methods ≥ 2^24 (FRC-0042 minimum), preparing for future Account Abstraction
 
 The Ethereum Account actor serves as a bridge between Ethereum wallets and the Filecoin network, allowing existing Ethereum tools to interact seamlessly with Filecoin.
+
+## Special System Actors
+
+Some system actors have special properties or serve specific governance purposes:
+
+### Keyless Account Actors
+
+Keyless account actors are special actors that have no associated private keys and can only be modified through network upgrades. These actors ensure that certain critical network functions remain under decentralized governance control:
+
+- **f090 (Mining Reserve)**: Holds the 300,000,000 FIL mining reserve allocation. This actor is a keyless account that ensures the mining reserve can only be distributed through FIP proposals and network upgrades, preventing any individual or group from unilaterally accessing these funds.
+
+- **f099 (Burnt Funds Actor)**: A keyless account that accumulates all burnt FIL from network fees and penalties. These funds are permanently removed from circulation and cannot be accessed by any entity.
