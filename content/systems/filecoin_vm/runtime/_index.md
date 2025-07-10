@@ -21,6 +21,9 @@ changes:
   - fip: FIP-0072
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0072.md
     description: Improved event syscall API with separate buffers and refined limits.
+  - fip: FIP-0083
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0083.md
+    description: Added built-in actor events for verified registry, market, and miner actors.
 -->
 
 A `MessageReceipt` contains the result of a top-level message execution. Every syntactically valid and correctly signed message can be included in a block and will produce a receipt from execution.
@@ -157,3 +160,32 @@ Events support indexing hints through flags:
 - `0x03`: Index by both key and value
 
 Note: Since FIP-0072, indexing costs have been removed from gas calculations as this feature was not being used.
+
+## Built-in Actor Events
+
+Since FIP-0083, built-in actors emit events to provide external observability of state transitions. Events use CBOR encoding (codec 0x51) for values.
+
+### Verified Registry Actor Events
+
+- **Verifier Balance Updated**: Emitted when a verifier's balance changes
+- **Datacap Allocated**: Emitted when a client allocates datacap to a provider
+- **Datacap Allocation Removed**: Emitted when an expired allocation is removed
+- **Datacap Allocation Claimed**: Emitted when a provider claims an allocation
+- **Datacap Claim Updated**: Emitted when a claim's term is extended
+- **Datacap Claim Removed**: Emitted when an expired claim is removed
+
+### Market Actor Events
+
+- **Deal Published**: Emitted for each new deal published by a provider
+- **Deal Activated**: Emitted when a deal is successfully activated
+- **Deal Terminated**: Emitted when a deal is terminated early
+- **Deal Completed**: Emitted when a deal completes successfully
+
+### Miner Actor Events
+
+- **Sector Pre-committed**: Emitted when a sector is pre-committed
+- **Sector Activated**: Emitted when a sector is prove-committed
+- **Sector Updated**: Emitted when a CC sector is updated with real data (Snap Deals)
+- **Sector Terminated**: Emitted when a sector is terminated
+
+Each event includes relevant metadata (IDs, addresses, CIDs) to enable filtering and tracking by external tools. Event payloads are kept minimal to reduce gas costs while providing sufficient information for observability.
