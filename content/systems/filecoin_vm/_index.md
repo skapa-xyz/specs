@@ -23,6 +23,9 @@ changes:
   - fip: FIP-0050
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0050.md
     description: Restricted built-in actor method invocation and defined stable public APIs for user actors.
+  - fip: FIP-0071
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0071.md
+    description: Introduced deterministic state access rules to ensure actors can only read state reachable from their state-tree.
 -->
 
 An Actor in the Filecoin Blockchain is the equivalent of the smart contract in the Ethereum Virtual Machine.
@@ -143,3 +146,70 @@ The EVM runtime actor exposes these main methods:
 ## State Tree
 
 Any operation applied (i.e., executed) on the Filecoin VM produces an output in the form of a _State Tree_ (discussed below). The latest _State Tree_ is the current source of truth in the Filecoin Blockchain. The _State Tree_ is identified by a CID, which is stored in the IPLD store.
+
+## Deterministic State Access
+
+Since FIP-0071, the FVM enforces deterministic rules for state access to ensure network consensus and prepare for user-defined WebAssembly actors. These rules guarantee that actors can only access state that is explicitly "reachable" from their execution context.
+
+### Reachable Set
+
+The FVM maintains a "reachable set" of IPLD blocks (identified by CIDs) that an actor instance can access. This set is per-actor-invocation and starts with:
+
+1. **Actor's state root**: The CID of the actor's state tree
+2. **Message parameters**: Any IPLD blocks passed as parameters from other actors
+3. **Return values**: Blocks returned from calls to other actors
+
+State is considered "reachable" if it can be accessed by traversing IPLD links (CIDs) from these roots.
+
+### IPLD State Access Rules
+
+Actors interact with state through IPLD syscalls, which enforce the following rules:
+
+#### Reading State (`ipld::block_open`)
+- Actors can only open blocks whose CIDs are in the reachable set
+- When a block is opened, all CIDs it references are added to the reachable set
+- Gas is charged for tracking reachable CIDs (`ipld_link_tracked`: 550 gas per CID)
+
+#### Writing State (`ipld::block_create`)
+- New blocks can only reference CIDs currently in the reachable set
+- The FVM performs link analysis to extract all CIDs from the block
+- Gas is charged for checking CID reachability (`ipld_link_checked`: 500 gas per CID)
+
+#### State Root Updates (`self::set_root`)
+- Actors can only set their state root to a CID in the reachable set
+- The root must be a blake2b-256 CID, not an identity-hashed inline block
+
+### Link Analysis
+
+The FVM performs IPLD link analysis to determine which blocks a given block references:
+
+**Supported Codecs**:
+- Raw (0x55): Contains no links
+- CBOR (0x51): Contains no links
+- DagCBOR (0x71): Can contain links to other IPLD blocks
+
+**Allowed CIDs**:
+- Blake2b-256 hashes (32 bytes)
+- Identity hashes (up to 64 bytes, inlining the block)
+- Codecs must be in the supported set
+
+**Gas Charges**:
+- `ipld_cbor_scan_per_field`: 85 gas per CBOR field parsed
+- `ipld_cbor_scan_per_cid`: 950 gas per CID encountered
+
+### Cross-Actor Communication
+
+When actors communicate via `send::send`:
+1. IPLD blocks are passed by handle, not by CID
+2. The receiving actor gets a copy of the block in its block table
+3. All CIDs reachable from the transferred block are added to the receiver's reachable set
+4. This ensures actors can share state while maintaining isolation
+
+### Security Benefits
+
+These rules prevent several potential issues:
+- **Consensus forks**: Actors cannot read arbitrary blocks that might exist in some nodes but not others
+- **State pollution**: Actors cannot reference garbage or leftover state from previous tipsets
+- **Deterministic execution**: All state access is predictable and reproducible across the network
+
+This deterministic state access model is essential for supporting arbitrary user-defined actors while maintaining network security and consensus.
