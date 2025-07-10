@@ -40,7 +40,7 @@ The _height_ of a block corresponds to the number of epochs elapsed from genesis
 
 ## Block Reward
 
-The reward in [FIL](glossary#fil) given to [storage miners](glossary#storage-miner-actor) for contributing to the network with storage and proving that they have stored the files they have committed to store. The _Block Reward_ is allocated to the storage miners that mine blocks and extend the blockchain.
+The reward in [FIL](glossary#fil) given to [storage miners](glossary#storage-miner-actor) for contributing to the network with storage and proving that they have stored the files they have committed to store. The _Block Reward_ is allocated to the storage miners that mine blocks and extend the blockchain. As of FIP-0004, 25% of block rewards are immediately available for withdrawal, while 75% vest linearly over 180 days and serve as collateral.
 
 ## Blockchain
 

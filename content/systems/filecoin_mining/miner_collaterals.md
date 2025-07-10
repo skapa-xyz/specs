@@ -46,11 +46,23 @@ $SectorInitialConsensusPledge = 30\% \times FILCirculatingSupply \times \frac{Se
 
 ## Block Reward Collateral
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0004
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0004.md
+    description: Introduced 25% immediate liquidity for block rewards, with 75% vesting over 180 days.
+-->
+
 Clients need reliable storage. Under certain circumstances, miners might agree to a storage deal, then want to abandon it later as a result of increased costs or other market dynamics. A system where storage miners can freely or cheaply abandon files would drive clients away from Filecoin as a result of serious data loss and low quality of service. To make sure all the incentives are correctly aligned, Filecoin penalizes miners that fail to store files for the promised duration. As such, high collateral could be used to incentivize good behavior and improve the networkʼs quality of service. On the other hand, however, high collateral creates barriers to miners joining the network. Filecoin's constructions have been designed such that they hit the right balance.
 
 In order to reduce the upfront collateral that a miner needs to provide, the block reward is used as collateral. This allows the protocol to require a smaller but still meaningful initial pledge. Block rewards earned by a sector are subject to slashing if a sector is terminated before its expiration. However, due to chain state limitations, the protocol is unable to do accounting on a per sector level, which would be the most fair and accurate. Instead, the chain performs a per-miner level approximation. Sublinear vesting provides a strong guarantee that miners will always have the incentive to keep data stored until the deal expires and not earlier. An extreme vesting schedule would release all tokens that a sector earns only when the sector promise is fulfilled.
 
-However, the protocol should provide liquidity for miners to support their mining operations, and releasing rewards all at once creates supply impulses to the network. Moreover, there should not be a disincentive for longer sector lifetime if the vesting duration also depends on the lifetime of the sector. As a result, a fixed duration linear vesting for the rewards that a miner earns after a short delay creates the necessary sub-linearity. This sub-linearity has been introduced by the Initial Pledge.
+However, the protocol should provide liquidity for miners to support their mining operations, and releasing rewards all at once creates supply impulses to the network. Moreover, there should not be a disincentive for longer sector lifetime if the vesting duration also depends on the lifetime of the sector. As a result, the protocol implements a balanced approach:
+- 25% of block rewards are immediately available for withdrawal, providing liquidity for mining operations
+- 75% of block rewards vest linearly over 180 days and serve as collateral
+
+This structure creates the necessary sub-linearity while ensuring miners have access to funds for operational needs. The vested portion acts as collateral and is added to pledgeDeltaTotal, aligning long-term incentives.
 
 In general, fault fees are slashed first from the soonest-to-vest unvested block rewards followed by the minerʼs account balance. When a minerʼs balance is insufficient to cover their minimum requirements, their ability to participate in consensus, win block rewards, and grow storage power will be restricted until their balance is restored. Overall, this reduces the initial pledge requirement and creates a sufficient economic deterrent for faults without slashing the miner's balance for every penalty.
 
