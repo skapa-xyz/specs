@@ -13,6 +13,9 @@ changes:
   - fip: FIP-0076
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0076.md
     description: Added direct data onboarding methods ProveCommitSectors3 and ProveReplicaUpdates3 that bypass built-in market deals.
+  - fip: FIP-0084
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0084.md
+    description: Removed ProveCommitSector method to eliminate gas subsidy imbalance and reduce cron overhead.
 -->
 
 # Adding Storage
@@ -21,8 +24,8 @@ A Miner adds more storage in the form of Sectors. Adding more storage is a two-s
 
 1. **PreCommitting a Sector**: A Miner publishes a Sector's SealedCID and data commitment (unsealed CID), through `miner.PreCommitSectorBatch2`, and makes a deposit. The Sector is now registered to the Miner, and the Miner must ProveCommit the Sector or lose their deposit.
 2. **ProveCommitting a Sector**: The Miner provides a Proof of Replication (PoRep) for the Sector through one of several methods:
-   - `miner.ProveCommitSector` or `miner.ProveCommitAggregate` - Traditional methods requiring built-in market deals
-   - `miner.ProveCommitSectors3` - Direct data onboarding method that bypasses the built-in market actor
+   - `miner.ProveCommitAggregate` - For batch proving multiple sectors with aggregated proofs
+   - `miner.ProveCommitSectors3` - For both single and batch sector proving, with optional direct data onboarding
    
    This proof must be submitted AFTER a delay (the InteractiveEpoch), and BEFORE PreCommit expiration.
 
