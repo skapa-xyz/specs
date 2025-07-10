@@ -18,6 +18,9 @@ changes:
   - fip: FIP-0031
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0031.md
     description: Added state to SystemActor to maintain registry of built-in actor Code CIDs.
+  - fip: FIP-0044
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0044.md
+    description: Added AuthenticateMessage method to AccountActor for standard authentication.
 -->
 
 There are eleven (11) builtin System Actors in total, but not all of them interact with the VM. Each actor is identified by a _Code ID_ (or CID).
@@ -65,5 +68,12 @@ The `RewardActor` is where unminted Filecoin tokens are kept. The actor distribu
 ## AccountActor
 
 The `AccountActor` is responsible for user accounts. Account actors are not created by the `InitActor`, but their constructor is called by the system. Account actors are created by sending a message to a public-key style address. The address must be `BLS` or `SECP`, or otherwise there should be an exit error. The account actor is updating the state tree with the new actor address.
+
+Since FIP-0044, the AccountActor implements the `AuthenticateMessage` method, which provides a standard way for actors to authenticate data. This method validates that a given message has been properly authorized by the account through signature verification. This standard authentication interface enables:
+- Other actors to verify account authorization without directly handling signatures
+- A template for other actors (built-in and user-defined) to implement authentication
+- Storage Market and Payment Channel actors to authenticate participants uniformly
+
+The AuthenticateMessage method accepts authorization data (typically a signature) and a message, returning true if the authentication is valid.
 
 {{<embed src="https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/account/account_actor.go" lang="go" >}}
