@@ -52,6 +52,9 @@ changes:
   - fip: FIP-0004
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0004.md
     description: Introduced 25% immediate liquidity for block rewards, with 75% vesting over 180 days.
+  - fip: FIP-0005
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0005.md
+    description: Removed vesting processing from PreCommitSector and ConfirmSectorProofsValid, leaving it to deadline cron and WithdrawBalance calls.
 -->
 
 Clients need reliable storage. Under certain circumstances, miners might agree to a storage deal, then want to abandon it later as a result of increased costs or other market dynamics. A system where storage miners can freely or cheaply abandon files would drive clients away from Filecoin as a result of serious data loss and low quality of service. To make sure all the incentives are correctly aligned, Filecoin penalizes miners that fail to store files for the promised duration. As such, high collateral could be used to incentivize good behavior and improve the networkʼs quality of service. On the other hand, however, high collateral creates barriers to miners joining the network. Filecoin's constructions have been designed such that they hit the right balance.
@@ -63,6 +66,8 @@ However, the protocol should provide liquidity for miners to support their minin
 - 75% of block rewards vest linearly over 180 days and serve as collateral
 
 This structure creates the necessary sub-linearity while ensuring miners have access to funds for operational needs. The vested portion acts as collateral and is added to pledgeDeltaTotal, aligning long-term incentives.
+
+Vesting is processed through the miner's deadline cron handler every 30 minutes and when WithdrawBalance is called. The vesting table is quantized to 12-hour increments. Miners can manually trigger vesting processing by calling WithdrawBalance with an amount of zero using the miner's Owner address.
 
 In general, fault fees are slashed first from the soonest-to-vest unvested block rewards followed by the minerʼs account balance. When a minerʼs balance is insufficient to cover their minimum requirements, their ability to participate in consensus, win block rewards, and grow storage power will be restricted until their balance is restored. Overall, this reduces the initial pledge requirement and creates a sufficient economic deterrent for faults without slashing the miner's balance for every penalty.
 
