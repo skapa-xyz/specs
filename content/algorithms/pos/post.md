@@ -38,6 +38,14 @@ Recall, that the probability of a storage miner being elected to mine a block is
 
 ## WindowPoSt
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0010
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0010.md
+    description: Introduced off-chain Window PoSt verification with optimistic acceptance and dispute mechanism.
+-->
+
 WindowPoSt is the mechanism by which the commitments made by storage miners are audited. In _WindowPoSt_ every 24-hour period is called a _"proving period"_ and is broken down into a series of 30min, non-overlapping _deadlines_, making a total of 48 deadlines within any given 24-hour proving period. Every miner must demonstrate availability of all claimed sectors on a 24hr basis. Constraints on individual proof computations limit a single proof to 2349 sectors (a partition), with 10 challenges each.
 
 In particular, the sectors that a miner has pledged to store are: i) assigned to _deadlines_, and ii) grouped in _partitions_. It is important to highlight that although sectors are assigned to deadlines, sectors are proven in partitions - not individually. In other words, upon every deadline, a miner has to prove a whole partition.
@@ -85,3 +93,27 @@ There are four relevant epochs associated to a deadline, shown in the table belo
 | `Close`       | `WPoStChallengeWindow`    | Epoch after which a PoSt Proof for this deadline will be rejected.                                                            |
 | `FaultCutoff` | `-FaultDeclarationCutoff` | Epoch after which a `miner.DeclareFault` and `miner.DeclareFaultRecovered` for sectors in the upcoming deadline are rejected. |
 | `Challenge`   | `-WPoStChallengeLookback` | Epoch at which the randomness for the challenges is available.                                                                |
+
+## Off-chain Verification and Dispute Mechanism
+
+Since FIP-0010, Window PoSt proofs are optimistically accepted on-chain without verification to reduce gas costs and chain bandwidth usage. This creates a trust-but-verify system where proofs can be disputed if they are invalid.
+
+### Optimistic Acceptance
+- Window PoSt proofs are accepted without on-chain verification
+- Exception: Proofs that recover faulty sectors are still verified on-chain to prevent abuse
+- Proofs are stored in the deadline state for the dispute window period
+
+### Dispute Window
+- Duration: 1800 epochs (2x finality) after the challenge window closes
+- Any party can dispute an invalid proof using `DisputeWindowedPoSt`
+- Successful disputes result in:
+  - All incorrectly proven sectors marked as faulty
+  - Miner loses power for those sectors
+  - Miner fined 5.51 times expected block reward per sector plus 20 FIL flat fee
+  - Disputer receives 4 FIL reward
+
+### Restrictions During Dispute Window
+- `CompactPartitions` is forbidden during the dispute window to prevent evasion
+- `TerminateSectors` is forbidden for the current and next deadline
+
+This mechanism maintains network security while significantly reducing operational costs for honest miners.
