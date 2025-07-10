@@ -19,6 +19,9 @@ changes:
   - fip: FIP-0065
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0065.md
     description: Simplified circulating supply calculation by excluding built-in market locked balances.
+  - fip: FIP-0081
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0081.md
+    description: Introduced lower bound for sector initial pledge by splitting consensus pledge into simple and baseline components.
 -->
 
 Most permissionless blockchain networks require upfront investment in resources in order to participate in the consensus. The more power an entity has on the network, the greater the share of total resources it needs to own, both in terms of physical resources and/or staked tokens (collateral).
@@ -59,13 +62,35 @@ $SectorInitialStoragePledge = Estimated20DaysSectorBlockReward$
 
 {{</katex>}}
 
-Since the storage pledge per sector is based on the expected block reward that sector will win, the storage pledge is independent of the networkʼs total storage. As a result, the total network storage pledge depends solely on future block reward. Thus, while the storage pledge provides a clean way to reason about the rationality of adding a sector, it does not provide sufficient long-term security guarantees to the network, making consensus takeovers less costly as the block reward decreases. As such, the second half of the initial pledge function, the consensus pledge, depends on both the amount of quality-adjusted power (QAP) added by the sector and the network circulating supply. The network targets approximately 30% of the network's circulating supply locked up in initial consensus pledge when it is at or above the baseline. This is achieved with a small pledge share allocated to sectors based on their share of the networkʼs quality-adjusted power. Given an exponentially growing baseline, initial pledge per unit QAP should decrease over time, as should other mining costs.
+Since the storage pledge per sector is based on the expected block reward that sector will win, the storage pledge is independent of the networkʼs total storage. As a result, the total network storage pledge depends solely on future block reward. Thus, while the storage pledge provides a clean way to reason about the rationality of adding a sector, it does not provide sufficient long-term security guarantees to the network, making consensus takeovers less costly as the block reward decreases. As such, the second half of the initial pledge function, the consensus pledge, depends on both the amount of quality-adjusted power (QAP) added by the sector and the network circulating supply. The network targets approximately 30% of the network's circulating supply locked up in initial consensus pledge when it is at or above the baseline. This is achieved with a small pledge share allocated to sectors based on their share of the networkʼs quality-adjusted power.
+
+### Consensus Pledge Components
+
+Since FIP-0081, the consensus pledge is split into two components to prevent pledge requirements from falling to zero as the baseline function grows exponentially:
 
 {{<katex>}}
 
-$SectorInitialConsensusPledge = 30\% \times FILCirculatingSupply \times \frac{SectorQAP}{max(NetworkBaseline, NetworkQAP)}$
+$SectorInitialConsensusPledge = (1 - \gamma) \times SimpleConsensusPledge + \gamma \times BaselineConsensusPledge$
 
 {{</katex>}}
+
+where:
+
+{{<katex>}}
+
+$SimpleConsensusPledge = 30\% \times FILCirculatingSupply \times \frac{SectorQAP}{NetworkQAP}$
+
+$BaselineConsensusPledge = 30\% \times FILCirculatingSupply \times \frac{SectorQAP}{max(NetworkBaseline, NetworkQAP)}$
+
+{{</katex>}}
+
+The parameter γ (gamma) determines the contribution of each component:
+- γ = 1.0: All consensus pledge comes from the baseline component (pre-FIP-0081 behavior)
+- γ = 0.7: 70% from baseline component, 30% from simple component (target value)
+
+This is implemented with a 1-year linear ramp from γ = 1.0 to γ = 0.7 after activation.
+
+The simple component provides a floor that prevents pledge requirements from falling to zero, maintaining network security even when the baseline function significantly exceeds network QAP. The baseline component preserves the incentive for growth by reducing pledge requirements when the network lags behind the baseline target.
 
 ### Network Circulating Supply
 
