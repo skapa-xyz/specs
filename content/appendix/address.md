@@ -73,6 +73,7 @@ The **protocol indicator** byte describes how a method should interpret the info
 - `1` : SECP256K1 Public Key
 - `2` : Actor
 - `3` : BLS Public Key
+- `4` : Delegated (f4)
 
 An example description in golang:
 
@@ -85,6 +86,7 @@ const (
 	SECP256K1
 	Actor
 	BLS
+	Delegated
 )
 ```
 
@@ -180,6 +182,43 @@ const (
                   base32[................................]
 ```
 
+#### Protocol 4: Delegated (f4)
+
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0048
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0048.md
+    description: Introduced f4 address class for extensible addressing schemes.
+-->
+
+**Protocol 4** addresses represent delegated addresses where user-defined address management actors control address assignment. The payload field contains the address manager's actor ID (leb128 encoded) followed by an arbitrary sub-address (up to 54 bytes) chosen by the address manager.
+
+**Bytes**
+
+```text
+|----------|----------------------------------------|
+| protocol |                payload                 |
+|----------|----------------------------------------|
+|    4     | leb128(actor-id) || sub-address        |
+```
+
+**String**
+
+```text
+|------------|----------|-----------------------------------------|----------|
+|  network   | protocol |                payload                  | checksum |
+|------------|----------|-----------------------------------------|----------|
+| 'f' or 't' |    '4'   | {decimal(actor-id)}f{base32(sub-addr)} |  4 bytes |
+```
+
+In the string format, f4 addresses are formatted as `f4{decimal(actor-id)}f{base32(sub-address || checksum)}` where:
+- `{decimal(actor-id)}` is the decimal representation of the address manager's actor ID
+- The sub-namespace is separated by an 'f' character
+- `{base32(sub-address || checksum)}` is the base32 encoding of the sub-address concatenated with a 4-byte checksum
+
+For example, an address manager at actor ID 10 managing sub-address `[0x01, 0x02, 0x03]` would produce: `f410f0000001020304yzxehm7a`
+
 ### Payload
 
 The payload represents the data specified by the protocol. All payloads except the payload of the ID protocol are [base32](https://tools.ietf.org/html/rfc4648#section-6) encoded using the lowercase alphabet when seralized to their human readable format.
@@ -187,6 +226,30 @@ The payload represents the data specified by the protocol. All payloads except t
 ### Checksum
 
 Filecoin checksums are calculated over the address protocol and payload using blake2b-4. Checksums are base32 encoded and only added to an address when encoding to a string. Addresses following the ID Protocol do not have a checksum.
+
+### Actor State and Delegated Addresses
+
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0048
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0048.md
+    description: Added delegated_address field to ActorState for f4 address storage.
+-->
+
+Since FIP-0048, the ActorState object includes a `delegated_address` field to store an actor's f4 address, if assigned:
+
+```rust
+pub struct ActorState {
+    pub code: Cid,
+    pub state: Cid,
+    pub nonce: u64,
+    pub balance: TokenAmount,
+    pub delegated_address: Option<Address>, // f4 address if assigned
+}
+```
+
+The FVM provides a `lookup_delegated_address` syscall to retrieve an actor's f4 address.
 
 ### Expected Methods
 
@@ -241,6 +304,11 @@ func Encode(network string, a Address) string {
 		return network + string(a.Protocol) + base32.Encode(a.Payload+cksm)
 	case ID:
 		return network + string(a.Protocol) + base10.Encode(leb128.Decode(a.Payload))
+	case Delegated:
+		// Extract actor ID and sub-address from payload
+		actorID, subAddr := decodeDelegatedPayload(a.Payload)
+		cksm := Checksum(a)
+		return network + string(a.Protocol) + base10.Encode(actorID) + "f" + base32.Encode(subAddr+cksm)
 	default:
 		Fatal("invalid address protocol")
 	}
@@ -274,6 +342,27 @@ func Decode(a string) Address {
 			Protocol: protocol,
 			Payload:  leb128.Encode(base10.Decode(raw)),
 		}
+	}
+
+	if protocol == Delegated {
+		// Parse f4 address: f4{actor-id}f{sub-address}
+		splitIdx := strings.Index(raw, "f")
+		if splitIdx < 0 {
+			Fatal(ErrInvalidFormat)
+		}
+		actorID := base10.Decode(raw[:splitIdx])
+		subAddrWithChecksum := base32.Decode(raw[splitIdx+1:])
+		subAddr := subAddrWithChecksum[:len(subAddrWithChecksum)-CksmLen]
+		cksm := subAddrWithChecksum[len(subAddrWithChecksum)-CksmLen:]
+		
+		// Reconstruct payload
+		payload := append(leb128.Encode(actorID), subAddr...)
+		addr := Address{Protocol: protocol, Payload: payload}
+		
+		if !ValidateChecksum(addr, cksm) {
+			Fatal(ErrInvalidChecksum)
+		}
+		return addr
 	}
 
 	raw = base32.Decode(raw)
@@ -431,3 +520,48 @@ xzg5tcaqwbyfabxetwtj4tsam3pbhnwghyhijr5mixa
 d28712965e5f26ecc40858382803724ed34f2720336
 f09db631f074
 ```
+
+### Delegated (f4) Type Addresses
+
+To aid in readability, these addresses are line-wrapped. Address and hex pairs
+are separated by `---`.
+
+```text
+f410f2v5eqgbpbty26bmjdmv4xa
+---
+040a01020304
+
+f432f76poymyubypmiiywlqzeim
+---
+04200eff924032365f51a36541efa24217bfc5b85bc6b
+
+f41111f574siazdmx2runsud35ciil37rnylpdl
+---
+0487570eff924032365f51a36541efa24217bfc5b85bc6b
+```
+
+### Address Managers
+
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0048
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0048.md
+    description: Introduced address managers for f4 address assignment.
+-->
+
+Address managers are actors that control f4 address assignment within their sub-namespace. An address manager at actor ID `N` controls all addresses starting with `f4{N}f`. For now, only specific "blessed" address managers are permitted, but this restriction will be relaxed when users can deploy custom WebAssembly actors.
+
+Address managers enable:
+- Foreign addressing schemes (e.g., Ethereum addresses)
+- Predictable address computation before actor deployment
+- Sending funds to addresses before actors exist there
+
+### Placeholder Actors
+
+When sending funds to an unassigned f4 address, the FVM creates a placeholder actor to hold the funds. The placeholder actor:
+- Has minimal functionality (accepts all messages but does nothing)
+- Stores the f4 address in its ActorState
+- Can be replaced by deploying a real actor to that address
+
+This enables counterfactual interactions where addresses can receive funds before the intended actor is deployed.

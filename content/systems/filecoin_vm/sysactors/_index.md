@@ -53,7 +53,21 @@ Built in to the genesis state, the `CronActor`'s dispatch table invokes the `Sto
 
 ## InitActor
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0048
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0048.md
+    description: Added Exec4 method for creating actors with f4 addresses.
+-->
+
 The `InitActor` has the power to create new actors, e.g., those that enter the system. It maintains a table resolving a public key and temporary actor addresses to their canonical ID-addresses. Invalid CIDs should not get committed to the state tree.
+
+Since FIP-0048, the InitActor also supports the `Exec4` method, which allows address managers to create new actors with specific f4 addresses. The Exec4 method:
+- Computes the f4 address as `4{leb128(caller-actor-id)}{subaddress}`
+- Creates a new actor with both an f2 (stable) address and the specified f4 address
+- Stores both address mappings in the InitActor's address map
+- Is currently restricted to "blessed" address managers
 
 Note that the canonical ID address does not persist in case of chain re-organization. The actor address or public key survives chain re-organization.
 
