@@ -86,7 +86,7 @@ The [_Cron Actor_](sysactors) is a scheduler actor that runs critical functions 
 
 ## DataCap
 
-DataCap is a one-time credit allocated by Notaries to Filecoin Plus clients. When a client makes a storage deal and identifies it as a Filecoin Plus verified deal, the DataCap is consumed and the miner receives a 10x deal quality multiplier for that deal, resulting in increased storage power and block rewards.
+DataCap is a credit allocated by Notaries to Filecoin Plus clients. When a client makes a storage deal and identifies it as a Filecoin Plus verified deal, the DataCap is consumed and the miner receives a 10x deal quality multiplier for that deal, resulting in increased storage power and block rewards. As of FIP-0012, clients can receive multiple DataCap allocations to the same address, with new allocations adding to their existing balance.
 
 ## Deal
 
