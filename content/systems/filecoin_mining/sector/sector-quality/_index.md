@@ -8,6 +8,14 @@ dashboardTests: 0
 math-mode: true
 ---
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0021
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0021.md
+    description: Corrected quality calculation for sector extensions to avoid overcounting deal spacetime.
+-->
+
 # Sector Quality
 
 Given different sector contents, not all sectors have the same usefulness to the network. The notion of Sector Quality distinguishes between sectors with heuristics indicating the presence of valuable data. That distinction is used to allocate more subsidies to higher-quality sectors. To quantify the contribution of a sector to the consensus power of the network, some relevant parameters are described here.
@@ -58,3 +66,23 @@ $sectorQuality = avgQuality*size$
 {{</katex>}}
 
 During `miner.PreCommitSector` and `miner.PreCommitSectorBatch`, the sector quality is calculated and stored in the sector information.
+
+## Sector Extension Quality Calculation
+
+When a sector is extended, the quality calculation must account for the fact that some of the original deal spacetime has already been "spent" during the sector's past lifetime. As of FIP-0021, the protocol corrects for this by adjusting the DealWeight and VerifiedDealWeight during extension.
+
+The adjustment is performed by multiplying the deal weights by the fraction of the sector's lifetime that remains:
+
+{{<katex>}}
+$remainingFraction = \frac{currentExpiration - currentEpoch}{currentExpiration - activationEpoch}$
+{{</katex>}}
+
+{{<katex>}}
+$adjustedDealWeight = DealWeight * remainingFraction$
+{{</katex>}}
+
+{{<katex>}}
+$adjustedVerifiedDealWeight = VerifiedDealWeight * remainingFraction$
+{{</katex>}}
+
+This correction prevents the overcounting of deal spacetime that would otherwise occur when sectors with expired deals are extended, ensuring that verified deal weight maintains its designed relative power compared to committed capacity sectors.

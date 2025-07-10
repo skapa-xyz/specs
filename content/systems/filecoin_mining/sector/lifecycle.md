@@ -36,7 +36,7 @@ All sectors are expected to remain live until the end of their sector lifetime a
 
 As with every system it is expected that sectors will present faults. Although this might degrade the quality offered by the network, the reaction of the miner to the fault drives system decisions on whether or not the miner should be penalized. A miner can recover the faulty sector, let the system terminate the sector automatically after 42 days of faults, or proactively terminate the sector immediately in the case of unrecoverable data loss. In case of a faulty sector, a small penalty fee approximately equal to the block reward that the sector would win per day is applied. The fee is calculated per day of the sector being unavailable to the network, i.e. until the sector is recovered or terminated.
 
-Miners can extend the lifetime of a sector at any time, though the sector will be expected to remain live until it has reached the end of the new sector lifetime. This can be done by submitting a `ExtendedSectorExpiration` message to the chain.
+Miners can extend the lifetime of a sector at any time, though the sector will be expected to remain live until it has reached the end of the new sector lifetime. This can be done by submitting a `ExtendedSectorExpiration` message to the chain. As of FIP-0021, when sectors are extended, their deal weights are adjusted to account for the portion of deal spacetime already consumed, preventing quality calculation issues.
 
 ## Sector Extension Limitations
 
