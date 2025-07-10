@@ -12,6 +12,14 @@ dashboardTests: 0
 
 # System Actors
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0031
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0031.md
+    description: Added state to SystemActor to maintain registry of built-in actor Code CIDs.
+-->
+
 There are eleven (11) builtin System Actors in total, but not all of them interact with the VM. Each actor is identified by a _Code ID_ (or CID).
 
 There are four (4) system actors required for VM processing:
@@ -32,7 +40,7 @@ The remaining seven (7) builtin System Actors that do not interact directly with
 - `PaymentChannelActor`: responsible for setting up and settling funds related to payment channels [[Paych Actor Repo](https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/paych/paych_actor.go)]
 - `StoragePowerActor`: responsible for keeping track of the storage power allocated at each storage miner [[Storage Power Actor](https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/power/power_actor.go)]
 - `VerifiedRegistryActor`: responsible for managing the Filecoin Plus program, including Root Key Holders (via multisig), Notaries, Filecoin Plus clients, and DataCap allocations. This actor enables the social trust layer that allows verified data to receive a 10x quality multiplier. Since FIP-0028, it also supports removing DataCap from client addresses through the `RemoveVerifiedClientDatacap` method [[Verifreg Actor Repo](https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/verifreg/verified_registry_actor.go)]
-- `SystemActor`: general system actor [[System Actor Repo](https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/system/system_actor.go)]
+- `SystemActor`: general system actor that, since FIP-0031, maintains a registry of built-in actor Code CIDs [[System Actor Repo](https://github.com/filecoin-project/specs-actors/blob/master/actors/builtin/system/system_actor.go)]
 
 ## CronActor
 

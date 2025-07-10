@@ -17,6 +17,9 @@ changes:
   - fip: FIP-0030
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0030.md
     description: Introduced the Filecoin Virtual Machine (FVM) with WASM-based execution and user-programmable actors.
+  - fip: FIP-0031
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0031.md
+    description: Switched to non-programmable FVM with content-addressed Code CIDs and introduced system actor state.
 -->
 
 An Actor in the Filecoin Blockchain is the equivalent of the smart contract in the Ethereum Virtual Machine.
@@ -31,5 +34,23 @@ The FVM provides:
 - **Built-in Actors**: Continued support for Filecoin's system actors (storage market, miner, etc.)
 - **IPLD Integration**: Native support for IPLD data structures and content-addressed storage
 - **Syscall Interface**: A comprehensive set of system calls for actor-to-system interactions
+
+## Actor Code CIDs
+
+Every actor in the state tree specifies a Code CID that identifies its executable code and serves as its type designator. Since FIP-0031, these are content-addressed CIDs computed over the actor's WASM bytecode:
+
+```
+CodeCid = Cid(IPLD_RAW_CODEC, Mh(BLAKE2B-256, wasm_bytecode))
+```
+
+Prior to FIP-0031, the network used synthetic CIDs of the form `fil/$actor_version/$actor_type`. The transition to content-addressed CIDs improved security and enabled proper content verification.
+
+### Built-in Actors
+
+The canonical implementation of Filecoin's built-in actors is maintained at [`filecoin-project/builtin-actors`](https://github.com/filecoin-project/builtin-actors). The build process produces a CARv1 archive containing all actor WASM bytecode, which clients import on startup.
+
+Since FIP-0031, the system actor (f00) maintains a registry of built-in actor Code CIDs in its state, enabling dynamic actor version management.
+
+## State Tree
 
 Any operation applied (i.e., executed) on the Filecoin VM produces an output in the form of a _State Tree_ (discussed below). The latest _State Tree_ is the current source of truth in the Filecoin Blockchain. The _State Tree_ is identified by a CID, which is stored in the IPLD store.
