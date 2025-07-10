@@ -10,11 +10,31 @@ dashboardTests: 0
 
 # Miner Collaterals
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0034
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0034.md
+    description: Fixed pre-commit deposit to sector quality 10 value regardless of sector content.
+-->
+
 Most permissionless blockchain networks require upfront investment in resources in order to participate in the consensus. The more power an entity has on the network, the greater the share of total resources it needs to own, both in terms of physical resources and/or staked tokens (collateral).
 
 Filecoin must achieve security via the dedication of resources. By design, Filecoin mining requires commercial hardware only (as opposed to ASIC hardware) that is cheap in amortized cost and easy to repurpose, which means the protocol cannot solely rely on the hardware as the capital investment at stake for attackers. Filecoin also uses upfront token collaterals, as in proof-of-stake protocols, proportional to the storage hardware committed. This gets the best of both worlds: attacking the network requires both acquiring and running the hardware, but it also requires acquiring large quantities of the token.
 
 To satisfy the multiple needs for collateral in a way that is minimally burdensome to miners, Filecoin includes three different collateral mechanisms: _initial pledge collateral, block reward as collateral, and storage deal provider collateral_. The first is an initial commitment of filecoin that a miner must provide with each sector. The second is a mechanism to reduce the initial token commitment by vesting block rewards over time. The third aligns incentives between miner and client, and can allow miners to differentiate themselves in the market. The remainder of this subsection describes each in more detail.
+
+## Pre-Commit Deposit
+
+Before a sector can be proven and activated, storage providers must submit a pre-commit deposit (PCD) that serves as an early commitment to the sector. Since FIP-0034, this deposit is set to a fixed value regardless of sector content, calculated as the 20-day projection of expected reward for a sector with quality 10 (i.e., completely filled with verified deals).
+
+This fixed pre-commit deposit:
+- Simplifies the onboarding process by removing the dependency on deal content
+- Provides adequate security against proof-of-replication cheating attempts
+- Enables future programmable storage markets by decoupling sector onboarding from the built-in market actor
+- Ensures the deposit is always less than the initial pledge, minimizing additional capital requirements
+
+The pre-commit deposit is forfeited if the sector fails to be proven within the required timeframe, incentivizing providers to complete the sector onboarding process.
 
 ## Initial Pledge Collateral
 
