@@ -402,6 +402,14 @@ A single consensus fault results into:
 
 ### Detection and Reporting
 
-A node that detects and reports a consensus fault is called "slasher". Any user in Filecoin can be a slasher. They can report consensus faults by calling the `ReportConsensusFault` on the `StorageMinerActor` of the faulty miner. The slasher is rewarded with a portion of the penalty paid by the offending miner's `ConsensusFaultPenalty` for notifying the network of the consensus fault. Note that some slashers might not get the full reward because of the low balance of the offending miners. However rational honest miners are still incentivised to notify the network about consensus faults.
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0011
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0011.md
+    description: Removed Dutch auction mechanism; reporter reward is now fixed at BlockReward/4.
+-->
 
-The reward given to the slasher is a function of some initial share (`SLASHER_INITIAL_SHARE`) and growth rate (`SLASHER_SHARE_GROWTH_RATE`) and it has a maximum `maxReporterShare`. Slasher's share increases exponentially as epoch elapses since the block when the fault is committed (see `RewardForConsensusSlashReport`). Only the first slasher gets their share of the pledge collateral and the remaining pledge collateral is burned. The longer a slasher waits, the higher the likelihood that the slashed collateral will be claimed by another slasher.
+A node that detects and reports a consensus fault is called "slasher". Any user in Filecoin can be a slasher. They can report consensus faults by calling the `ReportConsensusFault` on the `StorageMinerActor` of the faulty miner. The slasher is rewarded for notifying the network of the consensus fault.
+
+Since FIP-0011, the reward given to the slasher is fixed at `BlockReward / 4`, where `BlockReward` is the reward that would be awarded to a single miner at the current epoch. This replaced the previous Dutch auction mechanism that delayed reporting by making rewards increase over time. The fixed reward incentivizes immediate reporting of consensus faults, which is essential for maintaining the fairness of Expected Consensus. Only the first slasher receives the reward.
