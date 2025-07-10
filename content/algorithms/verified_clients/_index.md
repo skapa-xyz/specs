@@ -24,11 +24,16 @@ changes:
   - fip: FIP-0012
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0012.md
     description: Enabled DataCap top-ups to existing client addresses without requiring full depletion.
+  - fip: FIP-0028
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0028.md
+    description: Added ability to remove DataCap from client addresses.
 -->
 
 Notaries form a decentralized, globally distributed network of entities that confirm the useful storage demand of Filecoin Plus clients. They are entrusted with DataCap to allocate to clients based on trust and verification. When a Notary evaluates and affirms a client's demand to have real data stored, that client receives a DataCap allocation. 
 
 Since FIP-0012, Filecoin Plus clients can receive additional DataCap allocations to the same address at any time, without needing to fully deplete their existing balance. When topping up an existing client, the new allocation is added to their current DataCap balance. Notaries perform due diligence to ensure clients are not maliciously exploiting the system and should check existing allocations before approving additional DataCap.
+
+Since FIP-0028, Notaries also have the ability to remove DataCap from client addresses in cases of inactivity or abuse of the Filecoin Plus system. DataCap removal requires approval from two Notaries and two Root Key Holders, ensuring appropriate checks and balances. When a client's DataCap is reduced to zero or below, their verified client status is revoked.
 
 ### Filecoin Plus Clients
 Clients are active participants with DataCap allocation for their use cases. They can use DataCap to incentivize miners to provide additional features and service levels. Clients must deploy DataCap responsibly in accordance with program principles.
