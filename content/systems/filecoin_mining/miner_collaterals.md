@@ -16,6 +16,9 @@ changes:
   - fip: FIP-0034
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0034.md
     description: Fixed pre-commit deposit to sector quality 10 value regardless of sector content.
+  - fip: FIP-0065
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0065.md
+    description: Simplified circulating supply calculation by excluding built-in market locked balances.
 -->
 
 Most permissionless blockchain networks require upfront investment in resources in order to participate in the consensus. The more power an entity has on the network, the greater the share of total resources it needs to own, both in terms of physical resources and/or staked tokens (collateral).
@@ -63,6 +66,24 @@ Since the storage pledge per sector is based on the expected block reward that s
 $SectorInitialConsensusPledge = 30\% \times FILCirculatingSupply \times \frac{SectorQAP}{max(NetworkBaseline, NetworkQAP)}$
 
 {{</katex>}}
+
+### Network Circulating Supply
+
+The network circulating supply (FILCirculatingSupply) is a critical parameter in calculating the consensus pledge. It represents the total amount of FIL tokens that are actively circulating in the network economy.
+
+Since FIP-0065, the circulating supply is calculated as:
+
+{{<katex>}}
+$CirculatingSupply = Vested + Mined - Burnt - Locked$
+{{</katex>}}
+
+where:
+- **Vested**: Tokens that have been released from vesting schedules
+- **Mined**: All tokens that have been minted as mining rewards
+- **Burnt**: Tokens permanently removed from circulation (e.g., gas fees, penalties)
+- **Locked**: Only pledge collateral (no longer includes built-in market balances)
+
+Prior to FIP-0065, the Locked component included provider deal collateral, client deal collateral, and pending deal payments from the built-in storage market actor. These have been removed from the calculation to simplify the protocol and prepare for direct data commitments that bypass the built-in market actor.
 
 ## Block Reward Collateral
 
