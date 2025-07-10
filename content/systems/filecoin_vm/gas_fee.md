@@ -65,6 +65,9 @@ changes:
   - fip: FIP-0057
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0057.md
     description: Updated gas charging schedule for FEVM, increased storage costs, and introduced memory limits.
+  - fip: FIP-0075
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0075.md
+    description: Introduced proportional gas costs for randomness and tipset CID lookback operations.
 -->
 
 All messages in the Filecoin network, including `SubmitWindowedPoSt`, are subject to the same gas fee mechanism described above. Specifically, all messages burn `BaseFee * GasUsed` as a network fee. This uniform treatment ensures fair gas market dynamics and prevents distortion of incentives for message batching and chain bandwidth optimization.
@@ -157,3 +160,20 @@ FIP-0057 introduced system-wide limits to prevent resource exhaustion:
 - **Call depth limit**: Reduced from 1025 to 1024 to align with other blockchain VMs
 
 These updates ensure that gas costs accurately reflect resource consumption, preventing potential DoS attacks and maintaining network stability as FEVM enables arbitrary smart contract execution.
+
+### Randomness and Tipset CID Lookback Costs
+
+Operations that require looking back through the chain history have gas costs proportional to the lookback distance:
+
+- **`get_chain_randomness`**: Returns randomness from the ticket chain
+- **`get_beacon_randomness`**: Returns randomness from the beacon 
+- **`get_tipset_cid`**: Returns the CID of a tipset at a given epoch
+
+**Gas cost formula**: `75 * lookback + 146,200`
+
+Where:
+- `lookback` = current epoch - requested epoch
+- 75 gas per epoch accounts for skiplist traversal
+- 146,200 gas covers base overhead (serialization, hashing, syscall costs)
+
+This proportional pricing ensures that operations requiring deep chain traversal are appropriately charged, preventing potential DoS attacks through excessive lookback requests.

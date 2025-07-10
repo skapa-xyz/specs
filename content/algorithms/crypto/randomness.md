@@ -7,6 +7,14 @@ dashboardAudit: wip
 dashboardTests: 0
 ---
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0075
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0075.md
+    description: Moved entropy mixing from FVM syscalls to actor code, introduced proportional gas costs for lookback operations.
+-->
+
 # Randomness
 
 Randomness is used throughout the protocol in order to generate values and extend the blockchain.
@@ -65,6 +73,52 @@ GetRandomness(dst, l, s):
 
     return H(buffer)
 ```
+
+## FVM Randomness Syscalls
+
+The FVM provides two syscalls for fetching randomness:
+- `get_chain_randomness(round: ChainEpoch)` - Returns randomness from the ticket chain
+- `get_beacon_randomness(round: ChainEpoch)` - Returns randomness from the beacon
+
+These syscalls return the raw randomness value without any entropy mixing. Actors must perform their own randomness drawing by mixing in entropy using the following algorithm:
+
+```rust
+pub fn draw_randomness(
+    rbase: &[u8; 32],
+    pers: i64,
+    round: i64,
+    entropy: &[u8],
+) -> [u8; 32] {
+    let mut data = Vec::with_capacity(32 + 8 + 8 + entropy.len());
+
+    // Append the personalization value (DST)
+    let i64_bytes = pers.to_be_bytes();
+    data.extend_from_slice(&i64_bytes);
+
+    // Append the randomness
+    data.extend_from_slice(rbase);
+
+    // Append the round
+    let i64_bytes = round.to_be_bytes();
+    data.extend_from_slice(&i64_bytes);
+
+    // Append the entropy
+    data.extend_from_slice(entropy);
+
+    // Hash this data using Blake2b
+    fvm::crypto::hash_blake2b(&data)
+}
+```
+
+### Gas Costs for Randomness Lookback
+
+Both `get_chain_randomness` and `get_beacon_randomness` operations, as well as the `get_tipset_cid` operation, have gas costs proportional to the lookback distance (the difference between the current epoch and the requested epoch):
+
+**Gas cost formula**: `75 * lookback + 146200`
+
+This pricing ensures that operations requiring deep chain traversal are appropriately charged based on the computational work required. The formula accounts for:
+- 75 gas per epoch of lookback (based on skiplist traversal)
+- 146,200 gas for base overhead (serialization, hashing, and syscall costs)
 
 ## Drawing tickets from the VRF-chain for proof inclusion
 
