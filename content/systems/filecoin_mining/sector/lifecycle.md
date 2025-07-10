@@ -9,6 +9,14 @@ dashboardTests: 0
 
 # Sector Lifecycle
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0008
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0008.md
+    description: Added PreCommitSectorBatch method to enable batch pre-commitment of up to 256 sectors.
+-->
+
 Once the sector has been generated and the deal has been incorporated into the Filecoin blockchain, the storage miner begins generating Proofs-of-Spacetime (PoSt) on the sector, starting to potentially win block rewards and also earn storage fees. Parameters are set so that miners generate and capture more value if they guarantee that their sectors will be around for the duration of the original contract. However, some bounds are placed on a sectorʼs lifetime to improve the network performance.
 
 In particular, as sectors of shorter lifetime are added, the networkʼs capacity can be bottlenecked. The reason is that the chainʼs bandwidth is consumed with new sectors only replacing expiring ones. As a result, a minimum sector lifetime of six months was introduced to more effectively utilize chain bandwidth and miners have the incentive to commit to sectors of longer lifetime. The maximum sector lifetime is limited by the security of the present proofs construction. For a given set of proofs and parameters, the security of Filecoinʼs Proof-of-Replication (PoRep) is expected to decrease as sector lifetimes increase.
@@ -25,9 +33,22 @@ A sector can be in one of the following states.
 
 | State          | Description                                                                                                                                           |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Precommitted` | Miner seals sector and submits `miner.PreCommitSector` or `miner.PreCommitSectorBatch`                                                                |
+| `Precommitted` | Miner seals sector and submits `miner.PreCommitSector` or `miner.PreCommitSectorBatch` (up to 256 sectors per batch)                                  |
 | `Committed`    | Miner generates a Seal proof and submits `miner.ProveCommitSector` or `miner.ProveCommitAggregate`                                                    |
 | `Active`       | Miner generate valid PoSt proofs and timely submits `miner.SubmitWindowedPoSt`                                                                        |
 | `Faulty`       | Miner fails to generate a proof (see Fault section)                                                                                                   |
 | `Recovering`   | Miner declared a faulty sector via `miner.DeclareFaultRecovered`                                                                                      |
 | `Terminated`   | Either sector is expired, or early terminated by a miner via `miner.TerminateSectors`, or was failed to be proven for 42 consecutive proving periods. |
+
+## Batch Operations
+
+To improve gas efficiency and reduce chain congestion, miners can use batch methods for sector operations:
+
+### PreCommitSectorBatch
+The `PreCommitSectorBatch` method allows miners to pre-commit up to 256 sectors in a single transaction. This method provides significant gas savings by:
+- Fetching reward and power statistics only once for the entire batch
+- Allocating sector numbers in batch rather than individually
+- Loading and storing state structures (HAMT, AMT) only once
+- Invoking market actor verification once for all sectors
+
+High-growth miners benefit most from batching, as it amortizes per-sector costs across multiple sectors. The 256 sector limit per batch supports up to 8 EiB of 32 GiB sectors per year for a single miner.
