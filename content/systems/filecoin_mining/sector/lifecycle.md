@@ -30,6 +30,9 @@ changes:
   - fip: FIP-0041
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0041.md
     description: Added PreCommitSectorBatch2 and ProveReplicaUpdates2 for forward compatibility.
+  - fip: FIP-0052
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0052.md
+    description: Increased maximum sector commitment duration from 540 days to 1278 days (3.5 years).
 -->
 
 Once the sector has been generated and the deal has been incorporated into the Filecoin blockchain, the storage miner begins generating Proofs-of-Spacetime (PoSt) on the sector, starting to potentially win block rewards and also earn storage fees. Parameters are set so that miners generate and capture more value if they guarantee that their sectors will be around for the duration of the original contract. However, some bounds are placed on a sectorʼs lifetime to improve the network performance.
@@ -43,6 +46,21 @@ All sectors are expected to remain live until the end of their sector lifetime a
 As with every system it is expected that sectors will present faults. Although this might degrade the quality offered by the network, the reaction of the miner to the fault drives system decisions on whether or not the miner should be penalized. A miner can recover the faulty sector, let the system terminate the sector automatically after 42 days of faults, or proactively terminate the sector immediately in the case of unrecoverable data loss. In case of a faulty sector, a small penalty fee approximately equal to the block reward that the sector would win per day is applied. The fee is calculated per day of the sector being unavailable to the network, i.e. until the sector is recovered or terminated.
 
 Miners can extend the lifetime of a sector at any time, though the sector will be expected to remain live until it has reached the end of the new sector lifetime. This can be done by submitting a `ExtendedSectorExpiration` message to the chain. As of FIP-0021, when sectors are extended, their deal weights are adjusted to account for the portion of deal spacetime already consumed, preventing quality calculation issues.
+
+## Sector Commitment Duration
+
+### Maximum Commitment Duration
+Since FIP-0052, storage providers can commit sectors for up to 1278 days (3.5 years). This increased from the previous maximum of 540 days (1.5 years), enabling:
+- Longer-term storage deals that meet client demands for archival storage
+- Improved network stability through longer commitment periods
+- Reduced operational overhead from less frequent sector renewals
+
+The maximum commitment duration applies to:
+- Initial sector commitments when sectors are first proven
+- Sector extensions at any point during a sector's lifetime
+- Storage deals, which can now be made for up to 1278 days
+
+All sectors, including those committed before FIP-0052, are eligible for extension up to 1278 days, subject to the overall 5-year maximum sector lifetime limit imposed by proof security constraints.
 
 ## Sector Extension Limitations
 
