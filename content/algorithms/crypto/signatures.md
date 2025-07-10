@@ -7,6 +7,14 @@ dashboardAudit: coming
 dashboardTests: 0
 ---
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0079
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0079.md
+    description: Added FVM syscall for BLS aggregate signature verification and removed generic verify_signature syscall.
+-->
+
 # Signatures
 
 Signatures are cryptographic functions that attest to the origin of a particular
@@ -139,3 +147,58 @@ to avoid replay attacks. As a direct consequence, every message is unique
 thereby the aggregation is done on distinct messages. Obviously, the
 **assumption** here is that the block producer **enforces that distinction** and
 the other miners will **check all messages** to make sure they are valid.
+
+## FVM Signature Verification
+
+### Syscalls
+
+The FVM provides specialized syscalls for signature verification:
+
+- **`verify_bls_aggregate`**: Verifies BLS aggregate signatures (also supports non-aggregate BLS signatures)
+- **`hash`**: Computes cryptographic hashes
+- **`recover_secp_public_key`**: Recovers public key from Secp256k1 signatures
+
+The generic `verify_signature` syscall was removed in favor of these specialized syscalls for better performance and security.
+
+### BLS Aggregate Signature Verification
+
+The `verify_bls_aggregate` syscall supports verification of both aggregate and non-aggregate BLS signatures:
+
+```rust
+pub fn verify_bls_aggregate(
+    num_signers: u32,
+    sig_off: *const u8,
+    pub_keys_off: *const [u8; BLS_PUB_LEN],
+    plaintexts_off: *const u8,
+    plaintext_lens_off: *const u32,
+) -> Result<i32>;
+```
+
+**Key Features**:
+- Supports multiple signers signing multiple messages with a single signature
+- Enforces plaintext uniqueness (no duplicate messages)
+- Rejects public keys that are the G1 identity/zero point
+- Returns 0 for valid signatures, -1 for invalid
+
+**Gas Pricing**:
+```rust
+const BLS_GAS_PER_PLAINTEXT_BYTE: usize = 7;
+const BLS_GAS_PER_PAIRING: usize = 8_299_302;
+
+fn verify_bls_aggregate_gas(plaintexts: &[&[u8]]) -> usize {
+    let total_plaintext_len = plaintexts.iter().map(|p| p.len()).sum();
+    let num_pairings = plaintexts.len() + 1;
+    BLS_GAS_PER_PLAINTEXT_BYTE * total_plaintext_len + BLS_GAS_PER_PAIRING * num_pairings
+}
+```
+
+### SDK Functions
+
+The FVM SDK provides high-level functions for signature verification:
+
+- **`verify_bls_aggregate`**: Verifies BLS aggregate signatures
+- **`verify_signature`**: Verifies non-aggregate signatures (Secp256k1 or BLS)
+
+The `verify_signature` SDK function is implemented using the underlying syscalls:
+- For Secp256k1: Uses `hash` and `recover_secp_public_key` syscalls
+- For BLS: Uses `verify_bls_aggregate` syscall with a single signature
