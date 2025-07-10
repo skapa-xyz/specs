@@ -44,6 +44,9 @@ changes:
   - fip: FIP-0010
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0010.md
     description: Introduced off-chain Window PoSt verification with optimistic acceptance and dispute mechanism.
+  - fip: FIP-0061
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0061.md
+    description: Fixed WindowPoSt challenge generation to be independent of sector ordering.
 -->
 
 WindowPoSt is the mechanism by which the commitments made by storage miners are audited. In _WindowPoSt_ every 24-hour period is called a _"proving period"_ and is broken down into a series of 30min, non-overlapping _deadlines_, making a total of 48 deadlines within any given 24-hour proving period. Every miner must demonstrate availability of all claimed sectors on a 24hr basis. Constraints on individual proof computations limit a single proof to 2349 sectors (a partition), with 10 challenges each.
@@ -117,3 +120,41 @@ Since FIP-0010, Window PoSt proofs are optimistically accepted on-chain without 
 - `TerminateSectors` is forbidden for the current and next deadline
 
 This mechanism maintains network security while significantly reducing operational costs for honest miners.
+
+## Challenge Generation
+
+WindowPoSt requires generating cryptographic challenges for each sector to prove continued storage. The challenge generation algorithm determines which specific nodes (data chunks) within each sector must be proven.
+
+### Grindability Fix (FIP-0061)
+
+Prior to FIP-0061, WindowPoSt challenge generation had a vulnerability where challenges depended on the order of sectors provided. This allowed malicious storage providers to potentially manipulate challenges by reordering sectors to gain unfair advantages.
+
+Since FIP-0061, challenge generation is **independent of sector ordering**:
+
+#### Updated Algorithm
+```rust
+// Challenge generation per sector (post-FIP-0061)
+let sector_challenge_indexes = 0..challenge_count_per_sector;
+for challenge_index in sector_challenge_indexes {
+    let rand_int = u64::from_le_bytes(
+        sha256(chain_randomness || sector_id || challenge_index)[..8]
+    );
+    let challenge = rand_int % sector_nodes;
+}
+```
+
+Key improvements:
+- `challenge_index` is now **relative to each sector** (0 to challenge_count_per_sector)
+- Previously, `challenge_index` was global across all sectors in the WindowPoSt
+- Each sector's challenges are derived independently using only:
+  - Chain randomness
+  - Sector ID
+  - Challenge index within that sector
+
+### New Proof Types
+
+FIP-0061 introduced new proof types to signal the updated behavior:
+- `StackedDrgWindow32GiBV1_1` (replacing V1)
+- `StackedDrgWindow64GiBV1_1` (replacing V1)
+
+All miners were automatically migrated to V1_1 proof types during the network upgrade, ensuring uniform security improvements across the network.
