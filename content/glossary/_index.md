@@ -52,7 +52,15 @@ Bootstrapping traditionally refers to the process of starting a network. In the 
 
 ## Capacity commitment
 
-If a storage miner doesn't find any available deal proposals appealing, they can alternatively make a _capacity commitment_, filling a sector with arbitrary data, rather than with client data. Maintaining this sector allows the storage miner to provably demonstrate that they are reserving space on behalf of the network. Also referred to as Committed Capacity (CC).
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0019
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0019.md
+    description: CC sectors can now be updated with real data via Snap Deals without re-sealing.
+-->
+
+If a storage miner doesn't find any available deal proposals appealing, they can alternatively make a _capacity commitment_, filling a sector with arbitrary data, rather than with client data. Maintaining this sector allows the storage miner to provably demonstrate that they are reserving space on behalf of the network. Also referred to as Committed Capacity (CC). Since FIP-0019, CC sectors can be updated with real data through Snap Deals without requiring a full re-sealing process.
 
 ## Challenge Sampling
 
@@ -319,6 +327,18 @@ This measurement is the sector size multiplied by its promised duration in byte-
 ## Slashing
 
 Filecoin implements two kinds of slashing: [**Storage Fault Slashing**](glossary#storage-fault-slashing) and [**Consensus Fault Slashing**](glossary#consensus-fault-slashing).
+
+## Snap Deals
+
+<!-- YAML
+added: FIP-0019
+changes:
+  - fip: FIP-0019
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0019.md
+    description: Introduced one-message protocol for updating CC sectors with real data.
+-->
+
+Snap Deals is a protocol introduced in FIP-0019 that allows storage providers to update existing Committed Capacity (CC) sectors with real data without re-sealing. The provider embeds deal data into an existing sector replica through an encoding process using unpredictable randomness, then generates a single proof message (`ProveReplicaUpdates`) that demonstrates the sector was correctly updated. This significantly reduces the cost and time required to convert CC sectors to sectors containing real data, enabling providers to quickly onboard client data into their existing committed capacity.
 
 ## Smart contracts
 

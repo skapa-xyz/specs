@@ -21,13 +21,16 @@ changes:
   - fip: FIP-0014
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0014.md
     description: Allowed V1 proof sectors to be extended up to a maximum of 540 days.
+  - fip: FIP-0019
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0019.md
+    description: Introduced Snap Deals for updating CC sectors with real data without re-sealing.
 -->
 
 Once the sector has been generated and the deal has been incorporated into the Filecoin blockchain, the storage miner begins generating Proofs-of-Spacetime (PoSt) on the sector, starting to potentially win block rewards and also earn storage fees. Parameters are set so that miners generate and capture more value if they guarantee that their sectors will be around for the duration of the original contract. However, some bounds are placed on a sectorʼs lifetime to improve the network performance.
 
 In particular, as sectors of shorter lifetime are added, the networkʼs capacity can be bottlenecked. The reason is that the chainʼs bandwidth is consumed with new sectors only replacing expiring ones. As a result, a minimum sector lifetime of six months was introduced to more effectively utilize chain bandwidth and miners have the incentive to commit to sectors of longer lifetime. The maximum sector lifetime is limited by the security of the present proofs construction. For a given set of proofs and parameters, the security of Filecoinʼs Proof-of-Replication (PoRep) is expected to decrease as sector lifetimes increase.
 
-It is reasonable to assume that miners enter the network by adding Committed Capacity sectors, that is, sectors that do not contain user data. Once miners agree storage deals with clients, they upgrade their sectors to Regular Sectors. Alternatively, if they find Filecoin Plus clients and agree a storage deal with them, they upgrade their sector accordingly. Depending on whether or not a sector includes a Filecoin Plus deal, the miner acquires the corresponding storage power in the network.
+It is reasonable to assume that miners enter the network by adding Committed Capacity sectors, that is, sectors that do not contain user data. Once miners agree storage deals with clients, they upgrade their sectors to Regular Sectors. Since FIP-0019, miners can use Snap Deals to update CC sectors with real data without re-sealing, significantly reducing the cost and time of the upgrade process. Alternatively, if they find Filecoin Plus clients and agree a storage deal with them, they upgrade their sector accordingly. Depending on whether or not a sector includes a Filecoin Plus deal, the miner acquires the corresponding storage power in the network.
 
 All sectors are expected to remain live until the end of their sector lifetime and early dropping of sectors will result in slashing. This is done to provide clients a certain level of guarantee on the reliability of their hosted data. Sector termination comes with a corresponding _termination fee_.
 
@@ -72,3 +75,15 @@ The `ProveCommitSectorAggregated` method allows miners to prove-commit multiple 
 - Eliminating the need for temporary storage and cron-batching used in individual prove commits
 
 The method supports a minimum of 4 and a maximum of 819 sectors per aggregation. The aggregated proof uses novel cryptographic techniques to drastically reduce per-sector proof size and verification times. The maximum delay between pre-commit and prove-commit is extended to 30 days plus PreCommitChallengeDelay to allow miners of all sizes to accumulate enough sectors for efficient aggregation.
+
+## Sector Updates
+
+### Snap Deals (ProveReplicaUpdates)
+Snap Deals, introduced in FIP-0019, allow storage providers to update existing Committed Capacity (CC) sectors with real data without performing a full re-sealing operation. This one-message protocol significantly reduces the cost and time required to convert empty sectors into sectors containing client data.
+
+The process works by:
+- Encoding deal data into the existing CC sector replica using unpredictable randomness
+- Generating a SNARK proof that demonstrates the sector was correctly updated
+- Submitting a single `ProveReplicaUpdates` message to the chain
+
+This mechanism unlocks the large amount of CC capacity already committed to the network, allowing it to be quickly utilized for storing real client data. The protocol is limited to CC sectors as it requires access to the sector key commitment that is only available for sectors without existing deals.
