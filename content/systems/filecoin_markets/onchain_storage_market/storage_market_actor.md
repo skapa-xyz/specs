@@ -10,6 +10,14 @@ dashboardTests: 0
 math-mode: true
 ---
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0020
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0020.md
+    description: WithdrawBalance now returns the actual amount withdrawn.
+-->
+
 # Storage Market Actor
 
 The `StorageMarketActor` is responsible for processing and managing on-chain deals. This is also the entry point of all storage deals and data into the system. It maintains a mapping of `StorageDealID` to `StorageDeal` and keeps track of locked balances of `StorageClient` and `StorageProvider`. When a deal is posted on chain through the `StorageMarketActor`, it will first check if both transacting parties have sufficient balances locked up and include the deal on chain.
@@ -40,3 +48,7 @@ This collateral is returned to the storage provider when all deals in the sector
 ```text
 $$MinimumProviderDealCollateral = 1\% \times FILCirculatingSupply \times \frac{DealRawByte}{max(NetworkBaseline, NetworkRawBytePower)}$$
 ```
+
+## Balance Withdrawals
+
+The Storage Market Actor maintains escrow balances for both clients and providers. These balances can be withdrawn using the `WithdrawBalance` method. As of FIP-0020, this method returns the actual amount withdrawn, which may be less than the requested amount if the available balance is insufficient. This improvement provides better visibility and traceability of FIL flow, particularly important for financial reporting.
