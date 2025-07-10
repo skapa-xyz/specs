@@ -15,6 +15,9 @@ changes:
   - fip: FIP-0008
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0008.md
     description: Added PreCommitSectorBatch method to enable batch pre-commitment of up to 256 sectors.
+  - fip: FIP-0013
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0013.md
+    description: Added ProveCommitSectorAggregated method to enable aggregated proof verification for multiple sectors.
 -->
 
 Once the sector has been generated and the deal has been incorporated into the Filecoin blockchain, the storage miner begins generating Proofs-of-Spacetime (PoSt) on the sector, starting to potentially win block rewards and also earn storage fees. Parameters are set so that miners generate and capture more value if they guarantee that their sectors will be around for the duration of the original contract. However, some bounds are placed on a sectorʼs lifetime to improve the network performance.
@@ -34,7 +37,7 @@ A sector can be in one of the following states.
 | State          | Description                                                                                                                                           |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Precommitted` | Miner seals sector and submits `miner.PreCommitSector` or `miner.PreCommitSectorBatch` (up to 256 sectors per batch)                                  |
-| `Committed`    | Miner generates a Seal proof and submits `miner.ProveCommitSector` or `miner.ProveCommitAggregate`                                                    |
+| `Committed`    | Miner generates a Seal proof and submits `miner.ProveCommitSector` or `miner.ProveCommitSectorAggregated`                                             |
 | `Active`       | Miner generate valid PoSt proofs and timely submits `miner.SubmitWindowedPoSt`                                                                        |
 | `Faulty`       | Miner fails to generate a proof (see Fault section)                                                                                                   |
 | `Recovering`   | Miner declared a faulty sector via `miner.DeclareFaultRecovered`                                                                                      |
@@ -52,3 +55,12 @@ The `PreCommitSectorBatch` method allows miners to pre-commit up to 256 sectors 
 - Invoking market actor verification once for all sectors
 
 High-growth miners benefit most from batching, as it amortizes per-sector costs across multiple sectors. The 256 sector limit per batch supports up to 8 EiB of 32 GiB sectors per year for a single miner.
+
+### ProveCommitSectorAggregated
+The `ProveCommitSectorAggregated` method allows miners to prove-commit multiple sectors at once using aggregated proofs. This method provides significant gas savings by:
+- Using aggregated proof verification that scales logarithmically with the number of sectors
+- Amortizing state access costs across multiple prove commits
+- Batching market actor `ComputeDataCommitment` calls
+- Eliminating the need for temporary storage and cron-batching used in individual prove commits
+
+The method supports a minimum of 4 and a maximum of 819 sectors per aggregation. The aggregated proof uses novel cryptographic techniques to drastically reduce per-sector proof size and verification times. The maximum delay between pre-commit and prove-commit is extended to 30 days plus PreCommitChallengeDelay to allow miners of all sizes to accumulate enough sectors for efficient aggregation.
