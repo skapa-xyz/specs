@@ -27,6 +27,9 @@ changes:
   - fip: FIP-0026
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0026.md
     description: Extended sector fault cutoff period from 14 days to 42 days.
+  - fip: FIP-0041
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0041.md
+    description: Added PreCommitSectorBatch2 and ProveReplicaUpdates2 for forward compatibility.
 -->
 
 Once the sector has been generated and the deal has been incorporated into the Filecoin blockchain, the storage miner begins generating Proofs-of-Spacetime (PoSt) on the sector, starting to potentially win block rewards and also earn storage fees. Parameters are set so that miners generate and capture more value if they guarantee that their sectors will be around for the duration of the original contract. However, some bounds are placed on a sectorʼs lifetime to improve the network performance.
@@ -70,6 +73,8 @@ The `PreCommitSectorBatch` method allows miners to pre-commit up to 256 sectors 
 
 High-growth miners benefit most from batching, as it amortizes per-sector costs across multiple sectors. The 256 sector limit per batch supports up to 8 EiB of 32 GiB sectors per year for a single miner.
 
+Since FIP-0041, a new `PreCommitSectorBatch2` method (method number 28) is available that includes an `unsealed_sector_cid` field for forward compatibility with future market mechanisms. This method removes deprecated CC upgrade fields and prepares for user-deployable storage markets.
+
 ### ProveCommitSectorAggregated
 The `ProveCommitSectorAggregated` method allows miners to prove-commit multiple sectors at once using aggregated proofs. This method provides significant gas savings by:
 - Using aggregated proof verification that scales logarithmically with the number of sectors
@@ -90,3 +95,5 @@ The process works by:
 - Submitting a single `ProveReplicaUpdates` message to the chain
 
 This mechanism unlocks the large amount of CC capacity already committed to the network, allowing it to be quickly utilized for storing real client data. The protocol is limited to CC sectors as it requires access to the sector key commitment that is only available for sectors without existing deals.
+
+Since FIP-0041, a new `ProveReplicaUpdates2` method (method number 29) is available that includes a `new_unsealed_cid` field. This forward-compatible version prepares for future changes in storage market mechanisms where unsealed CIDs will serve as primary data identifiers.
