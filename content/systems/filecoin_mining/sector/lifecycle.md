@@ -24,6 +24,9 @@ changes:
   - fip: FIP-0019
     pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0019.md
     description: Introduced Snap Deals for updating CC sectors with real data without re-sealing.
+  - fip: FIP-0026
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0026.md
+    description: Extended sector fault cutoff period from 14 days to 42 days.
 -->
 
 Once the sector has been generated and the deal has been incorporated into the Filecoin blockchain, the storage miner begins generating Proofs-of-Spacetime (PoSt) on the sector, starting to potentially win block rewards and also earn storage fees. Parameters are set so that miners generate and capture more value if they guarantee that their sectors will be around for the duration of the original contract. However, some bounds are placed on a sectorʼs lifetime to improve the network performance.

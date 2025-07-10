@@ -9,6 +9,14 @@ dashboardTests: 0
 
 # Sector Faults
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0026
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0026.md
+    description: Extended sector fault cutoff period from 14 days (2 weeks) to 42 days (6 weeks).
+-->
+
 It is very important for storage providers to have a strong incentive to both report the failure to the chain and attempt recovery from the fault in order to uphold the storage guarantee for the networkʼs clients. Without this incentive, it is impossible to distinguish an honest minerʼs hardware failure from malicious behavior, which is necessary to treat miners fairly. The size of the fault fees depend on the severity of the failure and the rewards that the miner is expected to earn from the sector to make sure incentives are aligned. The two types of sector storage fault fees are:
 
 - **Sector fault fee:** This fee is paid per sector per day while the sector is in a faulty state. This fee is not paid the first day the system detects the fault allowing a one day grace period for recovery without fee. The size of the sector fault fee is slightly more than the amount the sector is expected to earn per day in block rewards. If a sector remains faulty for more than 42 consecutive days, the sector will pay a termination fee and be _removed from the chain state_. As storage miner reliability increases above a reasonable threshold, the risk posed by these fees decreases rapidly.
