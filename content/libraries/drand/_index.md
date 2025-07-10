@@ -9,12 +9,28 @@ dashboardAuditURL: /#section-appendix.audit_reports.drand
 dashboardAuditDate: '2020-08-09'
 ---
 
+<!-- YAML
+added: FIP-0000
+changes:
+  - fip: FIP-0063
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0063.md
+    description: Switched to new drand quicknet network with unchained randomness and 3s beacon frequency.
+-->
+
 # DRAND
 
 DRand (Distributed Randomness) is a publicly verifiable random beacon protocol Filecoin relies on as a source of unbiasable entropy for leader election (see [Secret Leader Election](expected_consensus#secret-leader-election)).
 
 At a high-level, the drand protocol runs a series of MPCs (Multi-Party Computations) in order to produce a series of deterministic, verifiable random values. Specifically, after a trusted setup, a known (to each other) group of n drand nodes sign a given message using t-of-n threshold BLS signatures in a series of successive rounds occuring at regular intervals (the drand round time).
 Any node that has gathered t of the signatures can reconstruct the full BLS signature. This signature can then be hashed in order to produce a collective random value which can be verified against the collective public key generated during the trusted setup. Note that while this can be done by the drand node, the random value (i.e. hashed value) should be checked by the consumer of the beacon. In Filecoin, we hash it using blake2b in order to obtain a 256 bit output.
+
+### Quicknet Network
+
+Since FIP-0063, Filecoin uses the drand **quicknet** network which features:
+- **Unchained randomness**: Each beacon is independent and doesn't reference previous beacons
+- **3-second beacon frequency**: Beacons are produced every 3 seconds (Filecoin uses every 10th beacon for its 30-second epochs)
+- **G1/G2 swap**: Signatures are on G1 (48 bytes) and public keys on G2, resulting in smaller beacon signatures
+- **Stateless verification**: No need to store previous beacons for verification
 
 drand assumes that at least t of the n nodes are honest (and online -- for liveness). If this threshold is broken, the adversary can permanently halt randomness production but cannot otherwise bias the randomness.
 
@@ -38,11 +54,11 @@ By polling the appropriate endpoint (see below for specifics on the drand networ
 Specifically, we have:
 
 - `Randomness` -- SHA256 hash of the signature
-- `Signature` -- the threshold BLS signature on the previous signature value `Previous` and the current round number `round`.
-- `PreviousSignature` -- the threshold BLS signature from the previous drand round.
-- `Round` -- the index of Randomness in the sequence of all random values produced by this drand network.
+- `Signature` -- the threshold BLS signature on the round number (for quicknet, no previous signature is included)
+- `PreviousSignature` -- (only for legacy chained beacons, not present in quicknet)
+- `Round` -- the index of Randomness in the sequence of all random values produced by this drand network
 
-Specifically, the message signed is the concatenation of the round number treated as a uint64 and the previous signature. At the moment, drand uses BLS signatures on the BLS12-381 curve with the latest v7 RFC of hash-to-curve and the signature is made over G1 (for more see the [drand specification](https://drand.love/docs/specification/#cryptographic-specification).
+For quicknet (unchained mode), the message signed is simply the round number treated as a uint64. The signature uses BLS12-381 with signatures on G1 and public keys on G2, following the latest v7 RFC of hash-to-curve.
 
 ## Polling the drand network
 
@@ -68,6 +84,23 @@ Note that it is possible to simply store the hash of this chain info and to
 retrieve the contents from the drand distribution network as well on the `/info`
 endpoint.
 
+#### Quicknet Chain Info
+
+The quicknet network used by Filecoin has the following parameters:
+```json
+{
+  "public_key": "83cf0f2896adee7eb8b5f01fcad3912212c437e0073e911fb90022d3e760183c8c4b450b6a0a6c3ac6a5776a2d1064510d1fec758c921cc22b0e17e63aaf4bcb5ed66304de9cf809bd274ca73bab4af5a6e9c76a4bc09e76eae8991ef5ece45a",
+  "period": 3,
+  "genesis_time": 1692803367,
+  "hash": "52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971",
+  "groupHash": "f477d5c89f21a17c863a7f937c6a6d15859414d2be09cd448d4279af331c5d3e",
+  "schemeID": "bls-unchained-g1-rfc9380",
+  "metadata": {
+    "beaconID": "quicknet"
+  }
+}
+```
+
 Thereafter, the Filecoin client can call drand's endpoints:
 
 - `/public/latest` to get the latest randomness value produced by the beacon
@@ -87,10 +120,17 @@ Filecoin. See [randomness](randomness) for more.
 
 ### Verifying an incoming drand value
 
-Upon receiving a new drand randomness value from a beacon, a Filecoin node should immediately verify its validity. That is, it should verify:
+Upon receiving a new drand randomness value from a beacon, a Filecoin node should immediately verify its validity:
 
-- that the `Signature` field is verified by the beacon's `PublicKey` as the beacon's signature of `SHA256(PreviousSignature || Round)`.
-- that the `Randomness` field is `SHA256(Signature)`.
+#### Quicknet (Unchained) Verification
+1. Instantiate BLS12-381 with signatures on G1 and public keys on G2
+2. Hash only the current beacon round number using SHA256
+3. Verify that the `Randomness` field equals `SHA256(Signature)`
+4. Verify the signature over the round number is valid for the group public key
+
+#### Legacy (Chained) Verification
+1. Verify that the `Signature` field is verified by the beacon's `PublicKey` as the beacon's signature of `SHA256(PreviousSignature || Round)`
+2. Verify that the `Randomness` field is `SHA256(Signature)`
 
 See [drand](https://github.com/drand/drand/blob/0df91a710b4366d41e88ad487814a16cf88494f9/crypto/schemes.go#L68) for an example.
 
@@ -124,6 +164,19 @@ MaxBeaconRoundForEpoch(filEpoch) {
 }
 ```
 
+### Beacon Sourcing for Quicknet
+
+Since quicknet produces beacons every 3 seconds but Filecoin epochs are 30 seconds, Filecoin only uses every 10th beacon. For a Filecoin epoch at time `T` seconds, the beacon round is calculated as:
+
+```
+beacon_round = (T - 30 - 1692803367) / 3 + 1
+```
+
+Where:
+- `1692803367` is the quicknet genesis timestamp
+- `3` is the quicknet period (3 seconds)
+- `30` accounts for the lookback (randomness from 30 seconds before the epoch)
+
 ## Edge cases and dealing with a drand outage
 
 It is important to note that any drand beacon outage will effectively halt
@@ -135,6 +188,8 @@ After a beacon downtime, drand nodes will work to quickly catch up to the
 current round, as defined by wall clock time. In this way, the above
 time-to-round mapping in drand (see above) used by Filecoin remains an invariant
 after this catch-up following downtime.
+
+With quicknet's 2-second catch-up time per beacon (compared to legacy's 15 seconds), the total catch-up time per Filecoin epoch is 20 seconds. Any monitoring, alerting, or automation relying on catch-up timing should account for this change.
 
 So while Filecoin miners were not able to mine during the drand outage, they
 will quickly be able to run leader election thereafter, given a rapid production
