@@ -124,6 +124,17 @@ Election Proof is used as a source of randomness in EC leader election. The elec
 
 Time in the Filecoin blockchain is discretized into _epochs_ that are currently set to thirty (30) seconds in duration. On every epoch, a subset of storage miners are elected to each add a new block to the Filecoin blockchain via [Winning Proof-of-Spacetime](glossary#winning-proof-of-spacetime-winningpost). Also referred to as [Round](glossary#round).
 
+## F3 (Fast Finality in Filecoin)
+
+_F3_ is a Byzantine Fault Tolerant (BFT) consensus protocol that provides fast finality for the Filecoin network. F3 runs alongside [Expected Consensus](expected_consensus) and provides deterministic finality for tipsets in tens of seconds, compared to the 7.5 hours (900 epochs) required for soft finality in EC alone. When F3 finalizes a tipset, it becomes irreversible, and all nodes must respect this finality in their chain selection.
+
+<!-- YAML
+changes:
+  - fip: FIP-0086
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0086.md
+    description: Added F3 definition to glossary.
+-->
+
 ## Fault
 
 A fault occurs when a proof is not posted in the Filecoin system within the proving period, denoting another malfunction such as loss of network connectivity, storage malfunction, or malicious behaviour.
@@ -149,6 +160,15 @@ Filecoin Plus is a program (previously called Verified Clients) that aims to max
 ## Finality
 
 [Finality](expected_consensus#finality-in-ec) is a well known concept in blockchain environments and refers to the amount of time needed until having a reasonable guarantee that a message cannot be reversed or cancelled. It is measured in terms of delay, normally in epochs or rounds from the point when a message has been included in a block published on-chain.
+
+With the introduction of F3 (Fast Finality in Filecoin), the network now has two types of finality: the original soft finality provided by Expected Consensus (approximately 900 epochs or 7.5 hours) and the fast deterministic finality provided by F3 (tens of seconds).
+
+<!-- YAML
+changes:
+  - fip: FIP-0086
+    pr-url: https://github.com/filecoin-project/FIPs/blob/master/FIPS/fip-0086.md
+    description: Updated finality definition to include F3's fast finality.
+-->
 
 ## `fr32`
 
