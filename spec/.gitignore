@@ -1,0 +1,5 @@
+# Claude settings
+.claude/
+
+# Agstruc workspace files
+CLAUDE.MD
